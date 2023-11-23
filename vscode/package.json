@@ -1,0 +1,234 @@
+{
+	"name": "upasm",
+	"displayName": "upasm",
+	"description": "upixels asm",
+	"publisher": "LuoWenfeng1986",
+	"repository": {
+		"url": "www.upixels.com"
+	},
+	"version": "0.10.3",
+	"engines": {
+		"vscode": "^1.50.0"
+	},
+	"categories": [
+		"Programming Languages",
+		"Debuggers"
+	],
+	"activationEvents": [
+		"onLanguage:upasm",
+		"onDebugResolve:upasm",
+		"workspaceContains:*.upasm"
+	],
+	"main": "./out/extension",
+	"contributes": {
+		"languages": [
+			{
+				"id": "upasm",
+				"extensions": [
+					".upasm",
+					".upinc",
+					".upconf",
+					".asm",
+					".inc"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"breakpoints": [
+			{
+				"language": "upasm"
+			}
+		],
+		"debuggers": [
+			{
+				"type": "upasm",
+				"label": "Debug UPASM",
+				"languages": [
+					"upasm"
+				]
+			}
+		],
+		"configuration": [
+			{
+				"title": "UPASM",
+				"properties": {
+					"upasm.project.filename": {
+						"type": "string",
+						"default": ""
+					}
+				}
+			}
+		],
+		"configurationDefaults": {
+			"[upasm]": {
+				"editor.wordBasedSuggestions": true,
+				"editor.semanticHighlighting.enabled": true
+			}
+		},
+		"commands": [
+			{
+				"command": "upasm.build",
+				"title": "UPASM: Build APP"
+			},
+			{
+				"command": "upasm.rename",
+				"title": "Rename (*.inc=>*.upinc, *.asm=>*.upasm, *.fct=>*.upasm, *.conf=>*.upconf)"
+			},
+			{
+				"command": "upasm.update-registers",
+				"title": "Update Registers"
+			},
+			{
+				"command": "upasm.count-instructions",
+				"title": "Count Instructions"
+			},
+			{
+				"command": "upasm.gensource",
+				"title": "Generate Souce Code From upconf"
+			},
+			{
+				"command": "upasm.project.setcurrent",
+				"title": "Set Current Project File"
+			},
+			{
+				"command": "upasm.project.addNew",
+				"title": "Create new.upproj"
+			}
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"when": "resourceLangId == upasm",
+					"command": "upasm.update-registers",
+					"group": "upasm"
+				},
+				{
+					"when": "resourceLangId == upasm",
+					"command": "upasm.count-instructions",
+					"group": "upasm"
+				}
+			],
+			"explorer/context": [
+				{
+					"when": "resourceExtname == .upconf",
+					"command": "upasm.gensource",
+					"group": "upasm.gensource"
+				},
+				{
+					"when": "resourceExtname == .upproj",
+					"command": "upasm.project.setcurrent",
+					"group": "upasm.project"
+				},
+				{
+					"command": "upasm.project.addNew",
+					"group": "upasm.project"
+				}
+			]
+		},
+		"semanticTokenTypes": [
+			{
+				"id": "register",
+				"superType": "variable",
+				"description": "Register type"
+			},
+			{
+				"id": "instruction",
+				"superType": "function",
+				"description": "Instruction code type"
+			},
+			{
+				"id": "cmp_operator",
+				"superType": "operator",
+				"description": "Compare operator"
+			},
+			{
+				"id": "directive",
+				"superType": "keyword",
+				"description": "Directive identifier start with #"
+			},
+			{
+				"id": "invalid",
+				"superType": "event",
+				"description": "Wrong token"
+			}
+		],
+		"colors": [
+			{
+				"id": "upasm.error.background",
+				"description": "Background decoration color for errors",
+				"defaults": {
+					"dark": "#db2b49",
+					"light": "#db2b49",
+					"highContrast": "#db2b49"
+				}
+			},
+			{
+				"id": "upasm.code.background",
+				"description": "Background decoration color for instructions",
+				"defaults": {
+					"dark": "#0e9202",
+					"light": "#0e9202",
+					"highContrast": "#0e9202"
+				}
+			},
+			{
+				"id": "upasm.data.background",
+				"description": "Background decoration color for data",
+				"defaults": {
+					"dark": "#a87d05",
+					"light": "#a87d05",
+					"highContrast": "#a87d05"
+				}
+			},
+			{
+				"id": "upasm.section.background",
+				"description": "Background decoration color for data",
+				"defaults": {
+					"dark": "#2e535a",
+					"light": "#2e535a",
+					"highContrast": "#2e535a"
+				}
+			},
+			{
+				"id": "upasm.condition.background",
+				"description": "Background decoration color for if",
+				"defaults": {
+					"dark": "#0871c7",
+					"light": "#0871c7",
+					"highContrast": "#0871c7"
+				}
+			},
+			{
+				"id": "upasm.condition.lcs.background",
+				"description": "Background decoration color for if",
+				"defaults": {
+					"dark": "#5423da",
+					"light": "#5423da",
+					"highContrast": "#5423da"
+				}
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"lint": "eslint . --ext .ts,.tsx",
+		"watch": "tsc -watch -p ./"
+	},
+	"devDependencies": {
+		"@types/fs-extra": "^9.0.0",
+		"@types/node": "^12.12.0",
+		"@types/vscode": "^1.26.0",
+		"@typescript-eslint/eslint-plugin": "^4.16.0",
+		"@typescript-eslint/parser": "^4.16.0",
+		"@types/ffi-napi": "^4.0.5",
+		"eslint": "^7.21.0",
+		"typescript": "^4.2.2"
+	},
+	"dependencies": {
+		"await-notify": "^1.0.1",
+		"ffi-napi": "^4.0.3",
+		"fs-extra": "^9.0.0",
+		"vscode-debugadapter": "^1.48.0-pre.0"
+	}
+}

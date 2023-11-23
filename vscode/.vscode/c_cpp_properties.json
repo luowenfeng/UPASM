@@ -1,0 +1,12 @@
+{
+    "configurations": [
+        {
+            "name": "windows",
+            "includePath": [
+                "${workspaceFolder}/src/UPASMDLL",
+				"C:/Users/LWF/AppData/Local/node-gyp/Cache/14.17.0/include/node"
+            ]
+        }
+    ],
+    "version": 4
+}

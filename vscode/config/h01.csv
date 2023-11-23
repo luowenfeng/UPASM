@@ -1,0 +1,167 @@
+// 寄存器个数
+#REGISTER
+//32bit,	64bit,	128bit,	256bit,
+  256,		0,		0,		0,
+
+// 寄存器别名
+#REG-ALIAS
+//alias,	register,
+rj,			r238,
+rv,			r239,
+cr,			r252,
+sp,			r255,
+irp,		r253,
+rp,			r254,
+iv0,		r240,
+iv1,		r241,
+iv2,		r242,
+iv3,		r243,
+iv4,		r244,
+iv5,		r245,
+iv6,		r246,
+iv7,		r247,
+
+// 指令模板
+#TEMPLATE
+//id,		word,		OPCODE,		T1,		T2,		DST,		RD1,		RD2,	example,
+0,			1,			w0 26+6,	w0 25,	w0 24,	w0 16+8,	w0 8+8,		w0 0+8,	add,
+1,			2,			w0 26+6,	w0 25,	w0 24,	w0 16+8,	w1 0+32,	,		lc,
+2,			1,			w0 26+6,	w0 25,	w0 24,	w0 16+8,	w0 0+16,	,		lcs,
+3,			1,			w0 16+16,	,		,		,			w0 8+8,		,		call,
+
+// 指令
+#INSTRUCTION
+//template,	name,		dst,	rd1,			rd2,				code,		cost,
+// 读写
+1,			lc,			reg32,	num|var,   		,					b000001,	c:2,
+2,			lcs,		reg32,	num|var,   		,					b101110,	c:1,
+0,			lw,			reg32,	reg32|num,		,					b001000,	c:3,
+0,			ls,			reg32,	reg32|num,		,					b001011,	c:3,
+0,			sw,			,		reg32,			reg32|num,			b001100,	c:2,
+0,			ss,			,		reg32,			reg32|num,			b001110,	c:2,
+// 算术
+0,			abs,		reg32,	reg32|num,		,					b010011,	c:1,
+0,			add,		reg32,	reg32|num,		reg32|num,			b010000,	c:1,
+0,			sub,		reg32,	reg32|num,		reg32|num,			b010001,	c:1,
+0,			mul,		reg32,	reg32,			reg32,				b010010,	c:2,
+0,			mul32,		reg32,	reg32,			reg32,				b101100,	c:5,
+0,			divu,		reg32,	reg32|num,		reg32|num,			b010100,	c:35,
+0,			divs,		reg32,	reg32|num,		reg32|num,			b010101,	c:35,
+0,			min,		reg32,	reg32|num,		reg32|num,			b101101,	c:1,
+0,			max,		reg32,	reg32|num,		reg32|num,			b101111,	c:1,
+// 位运算
+0,			and,		reg32,	reg32|num,		reg32|num,			b011000,	c:1,
+0,			or,			reg32,	reg32|num,		reg32|num,			b011001,	c:1,
+0,			xor,		reg32,	reg32|num,		reg32|num,			b011010,	c:1,
+0,			sl,			reg32,	reg32|num,		reg32|num,			b011100,	c:2,
+0,			sru,		reg32,	reg32|num,		reg32|num,			b011110,	c:2,
+0,			srs,		reg32,	reg32|num,		reg32|num,			b011111,	c:2,
+// 复杂算术
+0,			sqrt,		reg32,	reg32,   		,					b011011,	m:4-6,
+0,			log2f32,	reg32,	reg32,   		,					b101000,	m:4-6,
+0,			log2m8p24,	reg32,	reg32,   		,					b101001,	m:4-6,
+0,			exp2f32,	reg32,	reg32,   		,					b101010,	m:5-7,
+0,			exp2m16p16,	reg32,	reg32,   		,					b101011,	m:6-8,
+// 跳转
+0,			jmp,		,		reg32,			,					b100000,	c:4,
+3,			call,		,		reg32,			,					b1000011011111110,	c:4,
+0,			cjmpe,		reg32,	reg32|num,		reg32|num,			b111000,	j:2-5,
+0,			cjmpne,		reg32,	reg32|num,		reg32|num,			b110100,	j:2-5,
+0,			cjmpug,		reg32,	reg32|num,		reg32|num,			b110010,	j:2-5,
+0,			cjmpuge,	reg32,	reg32|num,		reg32|num,			b111010,	j:2-5,
+0,			cjmpsg,		reg32,	reg32|num,		reg32|num,			b110001,	j:2-5,
+0,			cjmpsge,	reg32,	reg32|num,		reg32|num,			b111001,	j:2-5,
+// 空白
+0,			nop,		,		,				,					b000000,	c:1,
+0,			hlt,		,		,				,					b000010,	,
+
+#SPECIAL-INSTRUCTION-TEMPLATE
+//ID,		word,		code,		p1,			p2,			p3,			p4,			p5,				p6,			p7,			p8,			p9,			p10,			p11,			p12,		p13,		p14,		p15,		p16
+0,			2,			w0 25+7,	w0 24,		w0 16+8,	w0 15,		w0 14,		w0 0+14 r1,		w1 31,		w1 30,		w1 29,		w1 28,		w1 14+14 r1,	w1 0+14 r1,		,			,			,			,			,
+
+#SPECIAL-INSTRUCTION
+//template,	name,		code,
+0,			vLog2,		b0000000,
+0,			vPow2,		b0000001,
+0,			vPolarRect, b0000010,
+0,			vRectPolar, b0000011,
+0,			vCopy, 		b0100000,
+0,			vMin, 		b0100001,
+0,			vMax, 		b0100010,
+0,			vSum, 		b0100011, 
+0,			vMean, 		b1100011,
+0,			vAbs, 		b0100100,
+0,			vAbsMin, 	b0100101,
+0,			vAbsMax,    b0100110,
+0,			vAbsSum,    b0100111,
+0,			vAbsMean,   b1100111,
+0,			vSquare,    b0101000,
+0,			vSquareMin, b0101001,
+0,			vSquareMax, b0101010,
+0,			vSquareSum, b0101011,
+0,			vSquareMean,b1101011,
+0,			vSqrt,      b0101100,
+0,			vSqrtMin,   b0101101,
+0,			vSqrtMax,   b0101110,
+0,			vSqrtSum,   b0101111,
+0,			vSqrtMean,  b1101111,
+0,			Energy,     b0110000,
+0,			EnergyMax,  b0110001,
+0,			EnergyMin,  b0110010,
+0,			EnergySum,  b0110011,
+0,			EnergyMean, b1110011,
+0,			CopyFIFO,   b0110100,
+0,			vConj, 		b0111000,
+0,			vMul_R, 	b1000001,
+0,			vAdd_R,     b1000011,
+0,			vSub_R,     b1000100,
+0,			vGain_f16, 	b1000101,	
+0,			vGain_m11p5,b1000110,	
+0,			FIR, 		b1001000,	
+0,			MatMul, 	b1001001,	
+0,			FIR_Hamming,b1001010, 		
+0,			Attack_Release, b1001011,
+0,			vAdd_C, 	b1001100,	
+0,			vSub_C, 	b1001101,	
+0,			vMul_C, 	b1001110,	
+0,			UnifyExp, 	b1001111,
+
+// 指令别名
+#INSTRUCTION-ALIAS
+// usage,				inst-1,					inst-2,				inst-3,				inst-4,				inst-5,				inst-6,				inst-7,
+cjmpul a b c,			cjmpug a c b,			,					,					,					,					,					,
+cjmpule a b c,			cjmpuge a c b,			,					,					,					,					,					,
+cjmpsl a b c,			cjmpsg a c b,			,					,					,					,					,					,
+cjmpsle a b c,			cjmpsge a c b,			,					,					,					,					,					,
+mov a b,				add a b 0,				,					,					,					,					,					,
+neg dst rd2,			sub dst 0 rd2,			,					,					,					,					,					,
+not dst rd1,			xor dst rd1 -1,			,					,					,					,					,					,
+ret,					jmp rp,					,					,					,					,					,					,
+inc dst rd2,			add dst dst rd2,		,					,					,					,					,					,
+iret,					jmp irp,				,					,					,					,					,					,
+jmp var,				lcs rj var,				jmp rj,				,					,					,					,					,
+call var,				lcs rj var,				call rj,			,					,					,					,					,
+lv reg var,				lcs rv var,				lw reg rv,			,					,					,					,					,
+sv var reg,				lcs rv var,				sw rv reg,			,					,					,					,					,
+sv dst src,				lcs rv dst,				lcs rj src,			sw rv rj,			,					,					,					,
+
+
+// 调试器配置
+#DEBUGER-CONFIG
+// name,				value,
+I2C_ADDR_BYTE,			0xdc,
+CPU_REG_BASE_ADDR,		0xfb00,
+STS_REG_DBG_ADDR,		0xff1c,
+CURRENT_IP,				0xff00,
+CTL_REG_DBG_ADDR,		0xff0c,
+CTL_REG_STEP_ADDR,		0xff14,
+HALT_CMD_ADDR,			0xff04,
+UNHALT_CMD_ADDR,		0xff08,
+CTL_REG_RFRSH_ADDR,		0xff20,
+CTL_REG_CONT_ADDR,		0xff18,
+BREAK_POINT_SN,			0x0c000000,
+IIC_ENDIAN,				big,
+
+//PROGRAM_BUSY,			0xff24,
+//
+
