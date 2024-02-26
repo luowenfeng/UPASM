@@ -5,6 +5,10 @@
 官网下载地址: https://www.wch.cn/downloads/CH341PAR_EXE.html
 
 ## 安装插件
+
+插件需要的vcruntime:
+https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
+
 **注意: 由于插件加载dll的方式, 目前插件能够支持的vscode最高版本号为1.77!!**  
 打开visual studio code, 点击左边的扩展按钮, 右上角的[...], 从VSIX安装, 选择upasm-0.10.2.vsix, 开始安装.
 
