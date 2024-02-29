@@ -14,7 +14,7 @@ export const tokenTypeText = [
 	'instruction',
 	'register',
 	'keyword',
-	'cmp_operator',
+	'operator',
 	'bracket',
 	'invalid'
 ];
@@ -28,6 +28,7 @@ export async function activate(context: vscode.ExtensionContext)
 	vscode.window.showInformationMessage("ProcessID:" + process.pid);	
 	let client = new UpasmClient(context.extensionPath);
 	let ext = new UpasmExt(context, client);
+	vscode.window.showInformationMessage("UpasmExt");
 
 	context.subscriptions.push(vscode.commands.registerCommand('upasm.build', ext.onRebuild, ext));
 	context.subscriptions.push(vscode.commands.registerCommand('upasm.rename', ext.onRename, ext));

@@ -53,8 +53,8 @@
 				"title": "UPASM",
 				"properties": {
 					"upasm.project.filename": {
-						"type": "string",
-						"default": ""
+						"type":"string",
+						"default":""
 					}
 				}
 			}
@@ -94,6 +94,7 @@
 				"command": "upasm.project.addNew",
 				"title": "Create new.upproj"
 			}
+
 		],
 		"menus": {
 			"editor/context": [
@@ -137,7 +138,7 @@
 				"description": "Instruction code type"
 			},
 			{
-				"id": "cmp_operator",
+				"id": "operator",
 				"superType": "operator",
 				"description": "Compare operator"
 			},

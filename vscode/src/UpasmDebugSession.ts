@@ -22,15 +22,22 @@ interface IRWCommand {
 	addr: number;
 	lengthOrValue: number;
 	toFile: string;
+	append: boolean;
 	hex_or_dec: 'hex'|'dec'|'dec+';
 }
 
 function decodeRWCommand(expression:string, refMgr:UpasmReferenceManager)
 {
-	let cmd:IRWCommand = {type:'invalid', step:4, addr:-1, lengthOrValue:-1, toFile:"", hex_or_dec:'hex'};
+	let cmd:IRWCommand = {type:'invalid', step:4, addr:-1, lengthOrValue:-1, toFile:"", append:true, hex_or_dec:'hex'};
 	let parts = expression.split(' ').filter(item => item != '');
 	if (parts.length == 5 && parts[3] == '>>') {
 		cmd.toFile = parts[4];
+		cmd.append = false;
+		parts = [parts[0], parts[1], parts[2]];
+	}
+	else if (parts.length == 5 && parts[3] == '>>>') {
+		cmd.toFile = parts[4];
+		cmd.append = true;
 		parts = [parts[0], parts[1], parts[2]];
 	}
 
@@ -636,7 +643,12 @@ export class UpasmDebugSession extends LoggingDebugSession {
 								}
 							}
 							if (cmd.toFile.length > 0) {
-								fs.appendFileSync(cmd.toFile, appendText + '\n');
+								if (cmd.append) {
+									fs.appendFileSync(cmd.toFile, appendText + '\n');
+								}
+								else {
+									fs.writeFileSync(cmd.toFile, result);
+								}								
 							}
 							response.body = {
 								result: result,
