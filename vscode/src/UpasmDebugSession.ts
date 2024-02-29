@@ -23,7 +23,14 @@ interface IRWCommand {
 	lengthOrValue: number;
 	toFile: string;
 	append: boolean;
-	hex_or_dec: 'hex'|'dec'|'dec+';
+	hex_or_dec: 'hex'|'dec'|'float';
+}
+
+function hex2float_str(num:number) {
+    var sign = (num & 0x80000000) ? -1 : 1;
+    var exponent = ((num >> 23) & 0xff) - 127;
+    var mantissa = 1 + ((num & 0x7fffff) / 0x7fffff);
+    return (sign * mantissa * Math.pow(2, exponent)).toString();
 }
 
 function decodeRWCommand(expression:string, refMgr:UpasmReferenceManager)
@@ -71,11 +78,13 @@ function decodeRWCommand(expression:string, refMgr:UpasmReferenceManager)
 			if (parts[0].length >= 2) {
 				let maxv = 0xff;
 				switch(parts[0][1]) {
+				case 'f': cmd.step = 4; cmd.hex_or_dec = 'float'; break;
 				case 'w': cmd.step = 4; maxv = 0xffffffff; break;
 				case 's': cmd.step = 2; maxv = 0xffff; break;
 				case 'b': cmd.step = 1; break;
 				default: return cmd;
 				}
+
 				if (parts[0][0] == 'r') {
 					switch (parts[0].length) {
 					case 2:
@@ -84,10 +93,11 @@ function decodeRWCommand(expression:string, refMgr:UpasmReferenceManager)
 						}
 						break;
 					case 3:
-						if ((parts[0][2] == 'd')
-						 && cmd.lengthOrValue > 0 && cmd.addr + cmd.lengthOrValue <= 0xffffffff && cmd.lengthOrValue % cmd.step == 0) {
+						if (cmd.lengthOrValue > 0 && cmd.addr + cmd.lengthOrValue <= 0xffffffff && cmd.lengthOrValue % cmd.step == 0) {
 							cmd.type = 'read';
-							cmd.hex_or_dec = 'dec';
+							if (parts[0][2] == 'd') {
+								cmd.hex_or_dec = 'dec';
+							}
 						}
 						break;
 
@@ -566,13 +576,13 @@ export class UpasmDebugSession extends LoggingDebugSession {
 		
 		let values = ref.values;
 		if (values.length > 1) {
-			let name = values.length.toString() + ' ' + (ref.format.signed ? 'signed ' : 'unsigned ');
+			let name = values.length.toString() + ' ';
 			switch(ref.format.step) {
 			case 1: name += '8-bit '; break;
 			case 2: name += '16-bit '; break;
 			case 4: name += '32-bit '; break;
 			}
-			name += ref.format.hex ? 'hex ' : 'decimal ';
+			name += ref.format.type;
 			name += 'data';
 			return {
 				result: name,
@@ -595,7 +605,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 			let expression = args.expression;
 			if (expression == '') {
 				expression = this.lastExpression;
-			}			
+			}
 
 			const cmd = decodeRWCommand(expression, this.refMgr);
 			if (cmd.type != 'invalid') {
@@ -620,7 +630,9 @@ export class UpasmDebugSession extends LoggingDebugSession {
 								}
 							}
 							let result = '', appendText = '';
-							if (cmd.hex_or_dec == 'hex') {
+
+							switch(cmd.hex_or_dec) {
+							case 'hex':
 								for (let i=0; i<codes.length; i++) {
 									let text = padZero(codes[i], cmd.step*2, 16) + ' '; 
 									result += text;
@@ -628,10 +640,10 @@ export class UpasmDebugSession extends LoggingDebugSession {
 									if ((i + 1) % (32/cmd.step) == 0) {
 										result += '\n';
 									}
-								}	
-							}
-							else {
-								
+								}
+								break;
+
+							case 'dec':
 								for (let i=0; i<codes.length; i++) {
 									let v = suppression(codes[i], Math.pow(2, cmd.step*8-1)-1);
 									let text = padZero(v, cmd.step*3, 10, ' ') + ' '; 
@@ -641,7 +653,19 @@ export class UpasmDebugSession extends LoggingDebugSession {
 										result += '\n';
 									}
 								}
-							}
+								break;
+
+							case 'float':
+								for (let i=0; i<codes.length; i++) {
+									let text = hex2float_str(codes[i]) + ' ';
+									result += text;
+									appendText += text;
+									if ((i + 1) % (8) == 0) {
+										result += '\n';
+									}
+								}
+								break;
+							}							
 							if (cmd.toFile.length > 0) {
 								if (cmd.append) {
 									fs.appendFileSync(cmd.toFile, appendText + '\n');

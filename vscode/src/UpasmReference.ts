@@ -5,15 +5,19 @@ import { IUpasmData, UpasmWatcher } from "./UpasmWatcher";
 
 interface IDataFormat {
 	step:1|2|4;
-	hex:boolean;
-	signed:boolean;
+	type:'hex'|'singed_decimal'|'unsigned_decimal'|'float';
 };
 
 export function decodeDataFormat(text:string)
 {
-	let fmt:IDataFormat = {step:4, hex:true, signed:false};
-	if (text.length != 3) {
-		throw new Error('Format should contain 3 letters.');
+	let fmt:IDataFormat = {step:4, type:'hex'};
+	if (text == 'f') {
+		fmt.step = 4;
+		fmt.type = 'float';
+		return fmt;
+	}
+	if (text.length != 2) {
+		throw new Error('Format should contain 2 letters.');
 	}
 
 	switch(text[0]) {
@@ -24,22 +28,22 @@ export function decodeDataFormat(text:string)
 	}
 
 	switch(text[1]) {
-	case 'h': fmt.hex = true; break;
-	case 'd': fmt.hex = false; break;
+	case 'h': fmt.type = 'hex'; break;
+	case 'u': fmt.type = 'unsigned_decimal'; break;
+	case 's': fmt.type = 'singed_decimal'; break;
 	default: throw new Error('Second letter for format should be h|d.');
 	}
 
-	switch(text[2]) {
-	case 's': fmt.signed = true; break;
-	case 'u': fmt.signed = false; break;
-	default: throw new Error('Third letter for format should be u|s.');
-	}
 	return fmt;
 }
 
 export function parseValue(value:string, format:IDataFormat)
 {
-	let v = parseInt(value, format.hex ? 16 : 10);		
+	if (format.type == 'float') {
+		return parseFloat(value);
+	}
+
+	let v = parseInt(value, format.type == 'hex' ? 16 : 10);
 	if (isNaN(v)) {
 		throw new Error('Invalid number "' + value + '"');
 	}
@@ -52,7 +56,7 @@ export function parseValue(value:string, format:IDataFormat)
 	case 1: maxv = 0xff; break;
 	}
 
-	if (format.signed) {
+	if (format.type == 'singed_decimal') {
 		maxv = maxv / 2;
 		minv = - maxv - 1;		
 	}
@@ -168,6 +172,13 @@ export function padZero(num:number, size:number, radix:number, padChar:string = 
 	return str;
 }
 
+function hex2float(num:number) {
+    var sign = (num & 0x80000000) ? -1 : 1;
+    var exponent = ((num >> 23) & 0xff) - 127;
+    var mantissa = 1 + ((num & 0x7fffff) / 0x7fffff);
+    return (sign * mantissa * Math.pow(2, exponent));
+}
+
 export class UpasmReference
 {
 	public readonly isRegister:boolean;
@@ -176,7 +187,7 @@ export class UpasmReference
 	public readonly fmtText:string;
 	public readonly format:IDataFormat;
 
-	constructor(isRegister:boolean, data:IUpasmData, refID:number, fmtText:string = 'whu')
+	constructor(isRegister:boolean, data:IUpasmData, refID:number, fmtText:string = 'wh')
 	{
 		this.isRegister = isRegister
 		this.data = data;
@@ -193,8 +204,11 @@ export class UpasmReference
 		case 4:
 			for (let i=0; i<bytes.length; i+=4) {
 				let v = bytes_2_word(bytes, i);
-				if (this.format.signed) {
+				if (this.format.type == 'singed_decimal') {
 					v = unsigned_word(v);
+				}
+				else if (this.format.type == 'float') {
+					v = hex2float(v);
 				}
 				codes.push(v);
 			}
@@ -203,7 +217,7 @@ export class UpasmReference
 		case 2:
 			for (let i=0; i<bytes.length; i+=2) {
 				let v = bytes_2_short(bytes, i);
-				if (this.format.signed) {
+				if (this.format.type == 'singed_decimal') {
 					v = unsigned_short(v);
 				}
 				codes.push(v);
@@ -213,7 +227,7 @@ export class UpasmReference
 		case 1:
 			for (const b of this.data.bytes) {
 				let v = b;
-				if (this.format.signed) {
+				if (this.format.type == 'singed_decimal') {
 					v = unsigned_byte(v);
 				}
 				codes.push(v);
@@ -229,12 +243,13 @@ export class UpasmReference
 		case 4: prefix = 'w'; break;
 		}
 		let i = 0;
-		if (this.format.hex) {
+		if (this.format.type == 'hex') {
 			for (const c of codes) {
 				values.push({name:prefix + i, value:'0x' + padZero(c, n, 16)});
 				i++;
 			}
 		}
+		
 		else {
 			for (const c of codes) {
 				values.push({name:prefix + i, value:c.toString(10)});
@@ -275,7 +290,7 @@ export class UpasmReferenceManager
 		this.configInfo = configInfo;
 		for (const reg of watcher.regs) {
 			let ref = new UpasmReference(true, reg, this.refID++);
-			let name = 'r' + reg.idxOrAddr + ' whu';
+			let name = 'r' + reg.idxOrAddr + ' wh';
 			this.refIdxMap.set(ref.refID, name);
 			this.refTextMap.set(name, ref);
 		}
@@ -357,7 +372,7 @@ export class UpasmReferenceManager
 
 	private decodeExpression(filename:string, expression:string)
 	{
-		let key:IUpasmRefKey = {isRegister:false, addrOrIdx:-1, length:0, format:'whu', text:''};
+		let key:IUpasmRefKey = {isRegister:false, addrOrIdx:-1, length:0, format:'wh', text:''};
 		let parts = expression.split(' ').filter(item => item != '');
 		if (parts.length <= 0 || parts.length > 3) {
 			throw new Error('Bad expression: ' + expression);
@@ -365,7 +380,7 @@ export class UpasmReferenceManager
 
 		let v = this.checkRegister(filename, parts[0]);
 		if (v >= 0) {
-			let ref = this.refTextMap.get('r' + v + ' whu');
+			let ref = this.refTextMap.get('r' + v + ' wh');
 			if (ref) {
 				key.isRegister = true;
 				key.addrOrIdx = v;
@@ -409,7 +424,7 @@ export class UpasmReferenceManager
 	}
 
 	public getRegister(idx:number) {
-		return this.refTextMap.get('r'+idx + ' whu');
+		return this.refTextMap.get('r'+idx + ' wh');
 	}
 
 	public getReg32(idx:number) {
