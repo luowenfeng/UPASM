@@ -33,6 +33,42 @@ function hex2float_str(num:number) {
     return (sign * mantissa * Math.pow(2, exponent)).toString();
 }
 
+function float2hex(d:number) {
+
+    var sign = "0";
+    if(d<0.0){
+        sign = "1";
+        d = -d;
+    }
+
+    var mantissa = d.toString(2);
+    var exponent = 0;
+    if(mantissa.substring(0,1) === "0"){
+        exponent = mantissa.indexOf('.') - mantissa.indexOf('1') + 127;
+    }
+    else{
+        exponent = mantissa.indexOf('.') - 1 + 127;
+    }
+
+    mantissa = mantissa.replace(".", "");
+    mantissa = mantissa.substring(mantissa.indexOf('1')+1);
+    if(mantissa.length>23){
+        mantissa = mantissa.substring(0,23);
+    }
+    else{
+        while(mantissa.length<23){
+            mantissa = mantissa +"0";
+        }
+    }
+
+    var exp = exponent.toString(2);
+    while(exp.length<8){
+        exp = "0" + exp;
+    }
+    var numberFull = sign + exp + mantissa;
+    return parseInt(numberFull, 2);//.toString(16);
+}
+
 function decodeRWCommand(expression:string, refMgr:UpasmReferenceManager)
 {
 	let cmd:IRWCommand = {type:'invalid', step:4, addr:-1, lengthOrValue:-1, toFile:"", append:true, hex_or_dec:'hex'};
@@ -105,7 +141,12 @@ function decodeRWCommand(expression:string, refMgr:UpasmReferenceManager)
 					}					
 				}
 				else if (parts[0][0] == 'w') {
-					if (parts[0].length == 2 && cmd.lengthOrValue >= 0 && cmd.lengthOrValue <= maxv && cmd.addr + cmd.step <= 0xffffffff) {
+					if (parts[0][1] == 'f') {
+						cmd.type = 'write';
+						let v = Number.parseFloat(parts[2]);						
+						cmd.lengthOrValue = float2hex(v);
+					}
+					else if (parts[0].length == 2 && cmd.lengthOrValue >= 0 && cmd.lengthOrValue <= maxv && cmd.addr + cmd.step <= 0xffffffff) {
 						cmd.type = 'write';
 					}
 				}
