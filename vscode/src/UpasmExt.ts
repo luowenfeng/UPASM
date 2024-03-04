@@ -211,6 +211,9 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 		return new Promise((resolve, reject) => {
 			vscode.workspace.saveAll().then(() => {	
 				const res = this.client.rebuild();
+				if (res.reason != '') {
+					reject(res.reason);
+				}
 				if (this.checkBuildResult(res)) {
 					const dbg = this.client.startDebug();
 					if (dbg.ok) {
@@ -307,26 +310,23 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 
 	private checkBuildResult(buildRes:{buildInfo?:IBuildInfo, reason:string})
 	{
+		let errors = [];
+		if (buildRes.reason != '') {
+			errors.push(buildRes.reason);
+		}
 		if (buildRes.buildInfo) {
 			this.buildInfo = buildRes.buildInfo;
-			let errors = getErrorsFromBuildInfo(buildRes.buildInfo);
-			if (errors.length) {
-				this.outputChannel.clear();
-				for (const error of errors) {
-					this.outputChannel.appendLine(error);
-				}
-				this.outputChannel.show();
-			}
-			else {
-				return true;
-			}
+			errors.concat(getErrorsFromBuildInfo(buildRes.buildInfo));
 		}
-		else {
+		if (errors.length) {
 			this.outputChannel.clear();
-			this.outputChannel.appendLine(buildRes.reason);
+			for (const error of errors) {
+				this.outputChannel.appendLine(error);
+			}
 			this.outputChannel.show();
+			//return false;
 		}
-		return false;
+		return true;
 	}
 
 	private openWorkspace()

@@ -263,7 +263,7 @@ export class UpasmClient {
 		let result = JSON.parse(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
-			return {buildInfo:decodeBuildInfo(result.buildInfo), reason:''};
+			return {buildInfo:decodeBuildInfo(result.buildInfo), reason:result.errors as string};
 		}
 		else {
 			return {buildInfo:undefined, reason:result.reason as string};
