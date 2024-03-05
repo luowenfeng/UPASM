@@ -150,9 +150,6 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 	private refMgr?:UpasmReferenceManager;
 	private buildButton;
 
-	private regMaps:RegMap[] = [];
-	public get RegMaps() { return this.regMaps; }
-	
 	//#region IUpasmDebuggerListener
 	onDebugEror(err:string):void
 	{
@@ -216,13 +213,14 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 				}
 				if (this.checkBuildResult(res)) {
 					const dbg = this.client.startDebug();
-					if (dbg.ok) {
+					if (dbg.ok) {						
 						this.watcher = new UpasmWatcher(this.client, dbg.reg32Count, dbg.reg64Count, dbg.reg128Count, dbg.reg256Count);
 						try {
 							this.outputChannel.clear();
 							this.watcher.updateRead();
 							this.refMgr = new UpasmReferenceManager(this.watcher, this.configInfo!, this.buildInfo!);
 							this.dbgSession = new UpasmDebugSession(dbg.useSimulator, this.refMgr, dbg.filename, dbg.lineNum, this.dbgEvent, this.client);
+							this.dbgSession.rootPath = this.currentPath;
 							resolve(new vscode.DebugAdapterInlineImplementation(this.dbgSession));
 							this.dbgEvent.sendEvent('stopOnEntry');
 							//vscode.commands.executeCommand('switch.readonly', true);
@@ -341,7 +339,6 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 		let open = this. client.openWorkspace(this.currentPath, this.projfile);
 		if (open.configInfo) {
 			this.configInfo = open.configInfo;
-			this.regMaps = open.configInfo.regMaps;
 		}
 		this.checkBuildResult(open);		
 	}

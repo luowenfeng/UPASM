@@ -189,7 +189,7 @@ export class UpasmReference
 
 	constructor(isRegister:boolean, data:IUpasmData, refID:number, fmtText:string = 'wh')
 	{
-		this.isRegister = isRegister
+		this.isRegister = isRegister;
 		this.data = data;
 		this.refID = refID;
 		this.fmtText = fmtText;
@@ -269,6 +269,14 @@ export interface IUpasmRefKey
 	text:string;
 }
 
+interface IRegMapInfo {
+	idx:number;
+	bit_start:number;
+	bit_len:number;
+}
+
+
+
 export class UpasmReferenceManager 
 {
 	private buildInfo:IBuildInfo;
@@ -277,6 +285,8 @@ export class UpasmReferenceManager
 	private refID = REG256_REF_ID + 1;
 	private refTextMap = new Map<string, UpasmReference>();
 	private refIdxMap = new Map<number, string>();
+	private regMap = new Map<number, IRegMapInfo>();
+	private _regs = new Array<IUpasmData>();
 
 	public get reg32Count() { return this.watcher.reg32Count; };
 	public get reg64Count() { return this.watcher.reg64Count; };
@@ -294,11 +304,30 @@ export class UpasmReferenceManager
 			this.refIdxMap.set(ref.refID, name);
 			this.refTextMap.set(name, ref);
 		}
+
+		for (const m of configInfo.regMaps) {
+			this.regMap.set(m.idx, {idx:m.mapTo, bit_start:m.offsetBit, bit_len:m.bitLen});
+		}
+
+		this._regs = [...this.watcher.regs];
+		for (const m of this.regMap) {
+			let src = this._regs[m[1].idx];
+			this._regs.push({idxOrAddr:m[0], bytes:src.bytes.slice(m[1].bit_start/8, (m[1].bit_start+m[1].bit_len)/8)});
+		}
 	}
 
 	public updateWatcher()
 	{
 		this.watcher.updateRead();
+		// 更新映射寄存器
+		let i = this.watcher.regs.length;
+		for (; i<this._regs.length; i++) {			
+			let m = this.regMap.get(i)!;
+			let src = this.watcher.regs[m.idx];
+			for (let j=0; j<m.bit_len/8; j++) {
+				this._regs[i].bytes[j] = src.bytes[m.bit_start/8+j];
+			}			
+		}
 	}
 
 	public getRefByID(id:number)
@@ -380,15 +409,26 @@ export class UpasmReferenceManager
 
 		let v = this.checkRegister(filename, parts[0]);
 		if (v >= 0) {
-			let ref = this.refTextMap.get('r' + v + ' wh');
-			if (ref) {
+			if (parts.length == 2) {
+				key.format = parts[1];
+			}
+			// 检查是否为映射寄存器
+			let m = this.regMap.get(v);
+			if (m) {
 				key.isRegister = true;
 				key.addrOrIdx = v;
-				key.length = ref?.data.bytes.length;
-				if (parts.length == 2) {
-					key.format = parts[1];
+				key.length = m.bit_len / 8;
+				key.text = 'r' + v + ' ' + key.format;
+			}
+			else {
+				// 普通寄存器
+				let ref = this.refTextMap.get('r' + v + ' wh');
+				if (ref) {
+					key.isRegister = true;
+					key.addrOrIdx = v;
+					key.length = ref?.data.bytes.length;
+					key.text = 'r' + key.addrOrIdx +' ' + key.format;
 				}
-				key.text = 'r' + key.addrOrIdx +' ' + key.format;
 			}
 		}
 		else if (parts.length >= 2) {
@@ -440,14 +480,14 @@ export class UpasmReferenceManager
 
 		let ref = this.refTextMap.get(key.text);
 		if (ref == undefined) {
+			let data:IUpasmData|undefined = undefined;
 			if (key.isRegister) {
-				ref = new UpasmReference(true, this.watcher.regs[key.addrOrIdx], this.refID, key.format); // 这里可能抛出异常, this.refID++写下面
-			}
-			else {
-				let mem = this.watcher.watchMemory(key.addrOrIdx, key.length);
-				ref = new UpasmReference(false, mem, this.refID, key.format);	// 这里可能抛出异常, this.refID++写下面
+				data = this._regs[key.addrOrIdx];
+			} else {
+				data = this.watcher.watchMemory(key.addrOrIdx, key.length);
 			}
 
+			ref = new UpasmReference(key.isRegister, data, this.refID, key.format);	// 这里可能抛出异常, this.refID++写下面
 			this.refID++;
 			this.refIdxMap.set(ref.refID, key.text);
 			this.refTextMap.set(key.text, ref);

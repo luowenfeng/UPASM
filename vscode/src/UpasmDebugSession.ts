@@ -9,6 +9,8 @@ import { Subject } from 'await-notify';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { UpasmClient } from './UpasmClient';
 import { basename } from 'path';
+import * as path from 'path';
+
 import { bytes_2_short, bytes_2_word, padZero, parseValueBytes, short_2_bytes, UpasmReference, UpasmReferenceManager, word_2_bytes } from './UpasmReference';
 
 const REG32_REF_ID = 1;
@@ -172,6 +174,8 @@ export class UpasmDebugSession extends LoggingDebugSession {
 	private currLine:number;
 	private _configurationDone = new Subject();
 	private lastExpression = '';
+	private _rootPath = '';
+	public set rootPath(p:string) {this._rootPath = p;}
 
 	public constructor(useSimulator:boolean, refMgr:UpasmReferenceManager, currFilename:string, currLine:number, event:EventEmitter, client:UpasmClient)
 	{
@@ -708,12 +712,15 @@ export class UpasmDebugSession extends LoggingDebugSession {
 								break;
 							}							
 							if (cmd.toFile.length > 0) {
+								if (!path.isAbsolute(cmd.toFile) && path.isAbsolute(this._rootPath)) {
+									cmd.toFile = path.join(this._rootPath, cmd.toFile);
+								}
 								if (cmd.append) {
 									fs.appendFileSync(cmd.toFile, appendText + '\n');
 								}
 								else {
 									fs.writeFileSync(cmd.toFile, result);
-								}								
+								}
 							}
 							response.body = {
 								result: result,
@@ -723,7 +730,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 						}
 						else {
 							throw res.reason;
-						}						
+						}					
 					}
 					else {
 						let bytes:number[] = [];
