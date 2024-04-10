@@ -20,26 +20,33 @@ export class UpasmWatcher {
 	public readonly reg128Count;
 	public readonly reg256Count;
 
-	constructor(client:UpasmClient, reg32Count:number, reg64Count:number, reg128Count:number, reg256Count:number)
+	constructor(client:UpasmClient, regCount:number[])
 	{
 		this.client = client;
-		let i=0;
-		for (; i<reg32Count; i++) {
+		this.reg32Count = regCount[0];
+		this.reg64Count = regCount[1];
+		this.reg128Count = regCount[2];
+		this.reg256Count = regCount[3];
+		let i=0, count = regCount[0];
+		for (; i<count; i++) {
 			this._regs.push({idxOrAddr:i, bytes:[0, 0, 0, 0]});
 		}
-		for (; i<reg32Count + reg64Count; i++) {
+		count += regCount[1];
+		for (; i<count; i++) {
 			this._regs.push({idxOrAddr:i, bytes:[0, 0, 0, 0, 0, 0, 0, 0]});
 		}
-		for (; i<reg32Count + reg64Count + reg128Count; i++) {
+		count += regCount[2];
+		for (; i<count; i++) {
 			this._regs.push({idxOrAddr:i, bytes:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]});
 		}
-		for (; i<reg32Count + reg64Count + reg128Count + reg256Count; i++) {
+		count += regCount[3];
+		for (; i<count; i++) {
 			this._regs.push({idxOrAddr:i, bytes:[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]});
 		}
-		this.reg32Count = reg32Count;
-		this.reg64Count = reg64Count;
-		this.reg128Count = reg128Count;
-		this.reg256Count = reg256Count;
+		count += regCount[4];
+		for (; i<count; i++) {
+			this._regs.push({idxOrAddr:i, bytes:[0, 0, 0, 0]});
+		}
 	}
 
 	public updateRead()

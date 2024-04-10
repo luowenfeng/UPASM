@@ -345,10 +345,7 @@ export class UpasmClient {
 			return {
 				ok:true, 
 				reason:'',
-				reg32Count:result.reg32Count as number, 
-				reg64Count:result.reg64Count as number, 
-				reg128Count:result.reg128Count as number, 
-				reg256Count:result.reg256Count as number, 
+				regCount:result.regCount as number[],
 				filename:result.filename as string,
 				lineNum:result.lineNum as number,
 				useSimulator:result.useSimulator,

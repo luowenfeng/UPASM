@@ -213,8 +213,9 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 				}
 				if (this.checkBuildResult(res)) {
 					const dbg = this.client.startDebug();
-					if (dbg.ok) {						
-						this.watcher = new UpasmWatcher(this.client, dbg.reg32Count, dbg.reg64Count, dbg.reg128Count, dbg.reg256Count);
+					if (dbg.ok && dbg.regCount && dbg.regCount.length >= 4) {						
+						
+						this.watcher = new UpasmWatcher(this.client, dbg.regCount);
 						try {
 							this.outputChannel.clear();
 							this.watcher.updateRead();
@@ -363,7 +364,10 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 		vscode.window.onDidChangeActiveTextEditor(editor => {
 			this.activeEditor = editor;
 			if (editor) {
-				this.triggerUpdateDecorations();
+				let ff = this.buildInfo?.files.get(editor.document.fileName);
+				if (ff) {
+					this.triggerUpdateDecorations();
+				}				
 			}
 		}, null, context.subscriptions);
 
