@@ -8,17 +8,18 @@ export interface ITokenInfo {
 	start:number;
 	length:number;
 	type:string;
-	refText?:string;
-	refFilename?:string;
-	refLineNum?:number;
+	refText:string;
+	refFilename:string;
+	refLineNum:number;
 }
 
 export interface ILineInfo {
 	lineNum:number;
 	textLen:number;
+	tokens:ITokenInfo[];
 	type:string;
 	decoText:string;
-	tokens:ITokenInfo[];
+	errors:string[];
 }
 
 export interface IVariableInfo {
@@ -28,9 +29,8 @@ export interface IVariableInfo {
 
 export interface IAsmInfo {
 	filename:string;
-	lines:ILineInfo[];
+	lines:Map<number,ILineInfo>;
 	vars:Map<string, number>;
-	macros:Map<string, string>;
 };
 
 export interface IConfigInfo {
@@ -40,20 +40,13 @@ export interface IConfigInfo {
 	regMaps:RegMap[];
 };
 
-export interface IBuildInfo {
-	files:Map<string, IAsmInfo>;
-	lowerFiles:Map<string, IAsmInfo>;
-	symbols:Map<string, number>
-};
-
-
 function decodeAsmInfo(json:any) 
 {
-	let asmInfo:IAsmInfo = {filename:json.filename, lines:[], vars:new Map<string, number>(), macros:new Map<string, string>()};
+	let asmInfo:IAsmInfo = {filename:json.filename, lines:new Map<number,ILineInfo>(), vars:new Map<string, number>()};
 	for (const line of json.lines) {
-		let l:ILineInfo = {lineNum:line.lineNum, textLen:line.textLen, type:line.type, decoText:line.decoText, tokens:[]}
+		let l:ILineInfo = {lineNum:line.lineNum, textLen:line.textLen, type:line.type, decoText:line.infoText, tokens:[], errors:[]}
 		for (const token of line.tokens) {
-			let tk:ITokenInfo = {start:token.start, length:token.length, type:token.type};
+			let tk:ITokenInfo = {start:token.start, length:token.length, type:token.type, refText:"", refFilename:"", refLineNum:-1};
 			if (token.refText) {
 				tk.refText = token.refText;
 				tk.refFilename = token.refFilename;
@@ -61,13 +54,11 @@ function decodeAsmInfo(json:any)
 			}
 			l.tokens.push(tk);
 		}
-		asmInfo.lines.push(l);
+		l.errors = line.errors;		
+		asmInfo.lines.set(l.lineNum, l);
 	}
 	for (const v of json.variables) {
 		asmInfo.vars.set(v.name, v.addr);
-	}
-	for (const v of json.macros) {
-		asmInfo.macros.set(v.name, v.value);
 	}
 
 	return asmInfo;
@@ -88,16 +79,34 @@ function decodeConfigInfo(json:any)
 	return {configFile:json.configFile, reg32Count:json.reg32Count, regAlias:regAlias, regMaps:regMaps};
 }
 
+
+export interface IBuildInfo {
+	files:Map<string, IAsmInfo>;
+	lowerFiles:Map<string, IAsmInfo>;
+	symbols:Map<string, number>;
+	cfg:IConfigInfo;
+	errors:string[];
+};
+
 function decodeBuildInfo(json:any)
 {
-	let buildInfo:IBuildInfo = {files:new Map<string, IAsmInfo>(), lowerFiles:new Map<string, IAsmInfo>(), symbols:new Map<string, number>()};
-	for (const file of json.files) {
+	let buildInfo:IBuildInfo = {
+		files:new Map<string, IAsmInfo>(), 
+		lowerFiles:new Map<string, IAsmInfo>(), 
+		symbols:new Map<string, number>(),
+		errors:[], 
+		cfg:decodeConfigInfo(json.configInfo)
+	};
+	for (const file of json.fileInfo) {
 		let asmInfo = decodeAsmInfo(file);
 		buildInfo.files.set(asmInfo.filename, asmInfo);
 		buildInfo.lowerFiles.set(asmInfo.filename.toLowerCase(), asmInfo);
 	}
-	for (const symbol of json.symbols) {
-		buildInfo.symbols.set(symbol.name, symbol.addr);
+	if (json.result == true) {
+		buildInfo.errors = json.buildErrors;
+		for(const pair of json.globalSymbols) {
+			buildInfo.symbols.set(pair.name, pair.addr);
+		}
 	}
 	return buildInfo;
 }
@@ -205,20 +214,20 @@ export class UpasmClient {
 		this.inst.dispose();
 	}
 
-	openWorkspace(workspace:string, projfile:string) : {configInfo?:IConfigInfo, buildInfo?:IBuildInfo, reason:string} {
+	openWorkspace(workspace:string, projfile:string) : {buildInfo?:IBuildInfo, reason:string} {
 		try {
 			let request = {method:'openWorkspace', workspace:workspace, projfile:projfile};
 			let result = JSON.parse(this.inst.processCommand(request)!);
 			const ok = result.result as boolean;
 			if (ok) {
-				return {configInfo:decodeConfigInfo(result.configInfo), buildInfo:decodeBuildInfo(result.buildInfo), reason:''};
+				return {buildInfo:decodeBuildInfo(result), reason:''};
 			}
 			else {
-				return {configInfo:undefined, buildInfo:undefined, reason:result.reason as string};
+				return {buildInfo:decodeBuildInfo(result), reason:result.reason as string};
 			}
 		} catch (error) {
 			console.log(error);
-			return {configInfo:undefined, buildInfo:undefined, reason:error as string};
+			return {buildInfo:undefined, reason:error as string};
 		}
 	}
 
@@ -234,27 +243,27 @@ export class UpasmClient {
 		}
 	}
 
-	updateFile(filename:string, content:string) : {ok:boolean, reason:string} {
+	updateFile(filename:string, content:string) : {ok:boolean, reason:string, buildErrors:string[]} {
 		let request = {method:'updateFile', filename:filename, content:content};
 		let result = JSON.parse(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
-			return {ok:true, reason:''};
+			return {ok:true, reason:'', buildErrors:result.buildErrors};
 		}
 		else {
-			return {ok:false, reason:result.reason as string};			
+			return {ok:false, reason:result.reason as string, buildErrors:[]};			
 		}
 	}
 
-	reloadFile(filename:string): {ok:boolean, reason:string} {
+	reloadFile(filename:string): {ok:boolean, reason:string, buildErrors:string[]} {
 		let request = {method:'reloadFile', filename:filename};
 		let result = JSON.parse(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
-			return {ok:true, reason:''};
+			return {ok:true, reason:'', buildErrors:result.buildErrors};
 		}
 		else {
-			return {ok:false, reason:result.reason as string};			
+			return {ok:false, reason:result.reason as string, buildErrors:[]};			
 		}
 	}
 
@@ -263,7 +272,7 @@ export class UpasmClient {
 		let result = JSON.parse(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
-			return {buildInfo:decodeBuildInfo(result.buildInfo), reason:result.errors as string};
+			return {buildInfo:decodeBuildInfo(result), reason:result.errors as string};
 		}
 		else {
 			return {buildInfo:undefined, reason:result.reason as string};
@@ -275,10 +284,10 @@ export class UpasmClient {
 		let result = JSON.parse(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
-			return {ok:true, files:result.files, reason:'', binsize:result.binsize};
+			return {ok:true, files:result.files, reason:''};
 		}
 		else {
-			return {ok:false, files:'', reason:result.reason as string, binsize:0};
+			return {ok:false, files:'', reason:result.reason as string};
 		}
 	}
 
@@ -348,18 +357,15 @@ export class UpasmClient {
 				regCount:result.regCount as number[],
 				filename:result.filename as string,
 				lineNum:result.lineNum as number,
-				useSimulator:result.useSimulator,
-				simFilepath:result.simFilepath
+				useSimulator:false,
+				simFilepath:""
 			};
 		}
 		else {
 			return {
 				ok:false, 
 				reason:result.reason as string,
-				reg32Count:0, 
-				reg64Count:0, 
-				reg128Count:0, 
-				reg256Count:0, 
+				regCount:[],
 				filename:'',
 				lineNum:0,
 				useSimulator:false,

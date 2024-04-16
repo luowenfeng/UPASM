@@ -71,7 +71,7 @@ function float2hex(d:number) {
     return parseInt(numberFull, 2);//.toString(16);
 }
 
-function decodeRWCommand(expression:string, refMgr:UpasmReferenceManager)
+function decodeRWCommand(expression:string, filename:string, refMgr:UpasmReferenceManager)
 {
 	let cmd:IRWCommand = {type:'invalid', step:4, addr:-1, lengthOrValue:-1, toFile:"", append:true, hex_or_dec:'hex'};
 	let parts = expression.split(' ').filter(item => item != '');
@@ -86,6 +86,7 @@ function decodeRWCommand(expression:string, refMgr:UpasmReferenceManager)
 		parts = [parts[0], parts[1], parts[2]];
 	}
 
+	
 	if (parts.length == 3) {
 		cmd.addr = Number.parseInt(parts[1]);
 		if (isNaN(cmd.addr)) {
@@ -93,7 +94,7 @@ function decodeRWCommand(expression:string, refMgr:UpasmReferenceManager)
 				let src = parts[1].split('+');
 				let base = Number.parseInt(src[0]);
 				if (isNaN(base)) {
-					let addr = refMgr.getGlobalSymbol(src[0]);
+					let addr = refMgr.getSymbol(filename, src[0]);
 					if (addr != undefined) {
 						base = addr;
 					}
@@ -104,7 +105,7 @@ function decodeRWCommand(expression:string, refMgr:UpasmReferenceManager)
 				}
 			}
 			else {
-				let addr = refMgr.getGlobalSymbol(parts[1]);
+				let addr = refMgr.getSymbol(filename, parts[1]);
 				if (addr != undefined) {
 					cmd.addr = addr;
 				}
@@ -652,7 +653,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 				expression = this.lastExpression;
 			}
 
-			const cmd = decodeRWCommand(expression, this.refMgr);
+			const cmd = decodeRWCommand(expression, this.currFilename, this.refMgr);
 			if (cmd.type != 'invalid') {
 				try {
 					if (cmd.type == 'read') {

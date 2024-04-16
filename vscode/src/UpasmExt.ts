@@ -76,7 +76,7 @@ function updateDecorations(activeEditor:vscode.TextEditor|null, files:Map<string
 	}
 	let decorations:vscode.DecorationOptions[] = [];
 	try {
-		for (const c of fileInfo.lines) {
+		for (const c of fileInfo.lines.values()) {
 			if (c.type == 'empty' && c.decoText == '') continue;
 
 			decorations.push({
@@ -99,12 +99,8 @@ function updateDecorations(activeEditor:vscode.TextEditor|null, files:Map<string
 function getErrorsFromBuildInfo(buildInfo:IBuildInfo)
 {
 	let errs = [];
-	for (const file of buildInfo.files.values()) {
-		for (const line of file.lines) {
-			if (line.type == 'error') {
-				errs.push(line.decoText + ' in file"' + file.filename + '" line ' + line.lineNum);
-			}
-		}
+	for (const err of buildInfo.errors) {
+		errs.push(err);
 	}
 	return errs;
 }
@@ -208,7 +204,7 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 		return new Promise((resolve, reject) => {
 			vscode.workspace.saveAll().then(() => {	
 				const res = this.client.rebuild();
-				if (res.reason != '') {
+				if (res.reason != undefined  && res.reason != '') {
 					reject(res.reason);
 				}
 				if (this.checkBuildResult(res)) {
@@ -248,7 +244,7 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 			if (res.fileInfo) {					
 				this.buildInfo?.files.set(document.fileName, res.fileInfo);
 				this.buildInfo?.lowerFiles.set(document.fileName.toLowerCase(), res.fileInfo);
-				for (const c of res.fileInfo.lines) {
+				for (const c of res.fileInfo.lines.values()) {
 					if (c.type == 'notInContext') {
 						vsbuilder.push(c.lineNum, 0, c.textLen, 0);
 					}
@@ -264,44 +260,49 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 		return vsbuilder.build();
 	}
 
+	private findLine(filename:string, lineNum:number) {
+		let asmInfo = this.buildInfo?.files.get(filename);
+		if (asmInfo) {
+			return asmInfo.lines.get(lineNum);
+		}
+		return undefined;
+	}
+
 	provideHover(document: vscode.TextDocument, position:vscode.Position, token:vscode.CancellationToken) : vscode.ProviderResult<vscode.Hover>
-	{		
-		let asmInfo = this.buildInfo?.files.get(document.fileName);
-		if (asmInfo && asmInfo.lines.length > position.line) {
-			let line = asmInfo.lines[position.line];
-			for (const tk of line.tokens) {
-				if (tk.start <= position.character && tk.start + tk.length >= position.character) {
-					if (tk.refText) {
-						if (tk.refLineNum! >= 0) {
-							return {
-								contents: [tk.refText!, tk.refFilename! + ' + ' + (tk.refLineNum! + 1).toString()]
-							};
-						}
-						else {
-							return {
-								contents: [tk.refText!]
-							};
-						}
+	{
+		let line = this.findLine(document.fileName, position.line);
+		if (line == undefined) 	return {contents:[]};
+		for (const tk of line.tokens) {
+			if (tk.start <= position.character && tk.start + tk.length >= position.character) {
+				if (tk.refText) {
+					if (tk.refLineNum! >= 0) {
+						return {
+							contents: [tk.refText!, tk.refFilename! + ' + ' + (tk.refLineNum! + 1).toString()]
+						};
 					}
-					break;
+					else {
+						return {
+							contents: [tk.refText!]
+						};
+					}
 				}
+				break;
 			}
 		}
-		return {contents:[]};
+		
 	}
 
 	provideDefinition(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.ProviderResult<vscode.Definition | vscode.LocationLink[]> 
 	{
-		let asmInfo = this.buildInfo?.files.get(document.fileName);
-		if (asmInfo && asmInfo.lines.length > position.line) {
-			let line = asmInfo.lines[position.line];
-			for (const tk of line.tokens) {
-				if (tk.start <= position.character && tk.start + tk.length >= position.character) {
-					if (tk.refText) {
-						return new vscode.Location(vscode.Uri.file(tk.refFilename!), new vscode.Position(tk.refLineNum!, 0));
-					}
-					break;
+		let line = this.findLine(document.fileName, position.line);
+		if (line == undefined) 	return undefined;
+
+		for (const tk of line.tokens) {
+			if (tk.start <= position.character && tk.start + tk.length >= position.character) {
+				if (tk.refText) {
+					return new vscode.Location(vscode.Uri.file(tk.refFilename!), new vscode.Position(tk.refLineNum!, 0));
 				}
+				break;
 			}
 		}
 		return undefined;
@@ -310,12 +311,12 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 	private checkBuildResult(buildRes:{buildInfo?:IBuildInfo, reason:string})
 	{
 		let errors = [];
-		if (buildRes.reason != '') {
+		if (buildRes.reason != undefined && buildRes.reason != '') {
 			errors.push(buildRes.reason);
 		}
 		if (buildRes.buildInfo) {
 			this.buildInfo = buildRes.buildInfo;
-			errors.concat(getErrorsFromBuildInfo(buildRes.buildInfo));
+			errors = errors.concat(getErrorsFromBuildInfo(buildRes.buildInfo));
 		}
 		if (errors.length) {
 			this.outputChannel.clear();
@@ -328,7 +329,7 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 		return true;
 	}
 
-	private openWorkspace()
+	public openWorkspace()
 	{
 		this.projfile = vscode.workspace.getConfiguration().get<string>('upasm.project.filename')!;
 		let projname = this.projfile;
@@ -337,9 +338,9 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 		}
 		this.buildButton.text = '$(file-binary) Build ' + projname;
 
-		let open = this. client.openWorkspace(this.currentPath, this.projfile);
-		if (open.configInfo) {
-			this.configInfo = open.configInfo;
+		let open = this.client.openWorkspace(this.currentPath, this.projfile);
+		if (open.buildInfo?.cfg) {
+			this.configInfo = open.buildInfo?.cfg;
 		}
 		this.checkBuildResult(open);		
 	}
@@ -397,7 +398,7 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 		}, null, context.subscriptions);
 
 		vscode.workspace.onDidSaveTextDocument(event => {
-			if (event.fileName.match(/.upinc$|.upasm$|.upconf$/)) {
+			if (event.fileName.match(/.upinc$|.upasm$|.upconf$|.upproj$/)) {
 				const res = this.client.reloadFile(event.fileName);
 				if (!res.ok)  {
 					this.outputChannel.appendLine(res.reason);
@@ -407,7 +408,7 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 		}, null, context.subscriptions);
 
 		vscode.workspace.onDidChangeTextDocument(event => {
-			if (event.document.fileName.match(/.upinc$|.upasm$|.upconf$/)) {
+			if (event.contentChanges.length > 0 && event.document.fileName.match(/.upinc$|.upasm$|.upconf$|.upproj$/)) {
 				if (this.dbgSession == undefined) {
 					const res = this.client.updateFile(event.document.fileName, event.document.getText());
 					if (!res.ok) {
@@ -592,14 +593,23 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 
 			if (this.checkBuildResult(res)) {
 				const outRes = this.client.output();
+				let projfile = this.projfile;
+				if (projfile == '') {
+					projfile = "default.upproj";
+				}
 				if (outRes.ok) {
-					this.outputChannel.appendLine('Build "' + this.projfile + '" succeed at ' + (new Date()).toString());
+					this.outputChannel.appendLine('Build "' + projfile + '" succeed at ' + (new Date()).toString());
 					this.outputChannel.appendLine('Output files:' + outRes.files);
-					this.outputChannel.appendLine('binary file size:' + outRes.binsize + ' bytes');
+					//for(const filename of outRes.files) {
+					//	if (filename.endsWith('.bin')) {
+					//		this.outputChannel.appendLine('binary file size:' + fs.fstatSync(filename).size + ' bytes');
+					//		break;
+					//	}
+					//}
 					this.outputChannel.show();
 				}
 				else {
-					this.outputChannel.appendLine('Build "' + this.projfile + '" failed!\n' + outRes.reason);
+					this.outputChannel.appendLine('Build "' + projfile + '" failed!\n' + outRes.reason);
 					this.outputChannel.show();	
 				}
 				this.outputChannel.appendLine('Cost ' + (after - before) + ' ms');

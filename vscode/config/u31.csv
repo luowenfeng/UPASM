@@ -14,6 +14,12 @@ r92,        r78 0+64,
 r93,        r78 64+64,
 r94,        r79 0+64,
 r95,        r79 64+64,
+
+//r88,		r72 0+32,
+//r89,		r72 32+32,
+//r90,		r72 64+32,
+//r91,		r72 64+32,
+
 r96,		r64 0+32,
 r97,		r64 32+32,
 r98,		r65 0+32,
@@ -187,7 +193,7 @@ s7_23,		r95,
 0,			s64,		reg32,						reg64,			reg32|num,			b001000110,		c:2,
 0,			lw,			reg32,						reg32|num,		reg32|num,			b001001000,		c:2,
 0,			sw,			reg32,						reg32|num,		reg32|num,			b001001010,		c:2,
-2,			push,		reg32,						reg32|num,		,			        b001001011,		c:2,
+0,			push,		reg32,						reg32|num,		reg32|num,	        b001001011,		c:2,
 0,			ls,			reg32,						reg32|num,		reg32|num,			b001001101,		c:2,
 0,			ss,			reg32,						reg32|num,		reg32|num,			b001001111,		c:2,
 0,			lsu,		reg32,						reg32|num,		reg32|num,			b001001100,		c:2,
@@ -243,9 +249,9 @@ s7_23,		r95,
 0,			divs64_32,  reg64,	reg64,		    reg32,		    	b011000110,		c:2,
 0,			divs64,     reg64,	reg64,		    reg64|num,       	b011000100,		c:2,
 0,			fdiv,       reg32,	reg32,		    reg32|num,       	b011001000,		c:2,
-0,			cvt64_32,	reg32,	reg64,	     	,		       	    b101001010,		c:2,
-0,			cvt32_16,	reg32,	reg32|num,	    ,     		       	b101001001,		c:2,
-0,			cvt32_64,	reg64,	reg32|num,	    num,		        b101001100,		c:2,
+0,			64to32,		reg32,	reg64,	     	,		       	    b101001010,		c:2,
+0,			32to16,		reg32,	reg32|num,	    ,     		       	b101001001,		c:2,
+0,			32to64,		reg64,	reg32|num,	    num,		        b101001100,		c:2,
 0,			signed,		reg32,	reg32,	        ,		            b101011100,		c:2,
 0,   		rpc16,  	reg32, 	reg64,      	num,          		b101010010,  	c:2,
 0,			linear,		reg32,	reg32,	        num,		        b101011000,		c:2,
@@ -259,7 +265,7 @@ s7_23,		r95,
 0,			fconj,		reg64,	reg64,          ,                   b010110100,		c:2,
 0,			conj32,		reg64,	reg64,          ,                   b010110110,		c:2,
 0,			sqrt,		reg32,	reg32|num,		,					b011100110,		c:2,
-0,			sqrt_uint,	reg32,	reg32|num,		,					b011101000,		c:2,
+0,			sqrtf,	    reg32,	reg32|num,		,					b011101000,		c:2,
 0,			fsqrt,	    reg32,	reg32|num,		,					b011101010,		c:2,
 0,			exp2_frac32,reg32,	reg32|num,		,					b011100000,		c:2,
 0,			exp2_m16p16,reg32,	reg32|num,		,					b011100010,		c:2,
@@ -351,6 +357,7 @@ s7_23,		r95,
 0,			simd_fmuladd,reg32, reg128,	        reg128,  	     	b110001100,		c:2,
 0,			simd_fadd,  reg128, reg128,	        reg128,  	     	b111001100,		c:2,
 0,			simd_fsub,  reg128, reg128,	        reg128,  	     	b111001101,		c:2,
+0,			simd_fsum,  reg128, reg128,	        ,  	     	        b111001110,		c:2,
 0,			simd_fmax1, reg128, reg128,	        ,  	           	    b110101100,		c:2,
 0,			simd_fmin1, reg128, reg128,	        ,  	           	    b110101101,		c:2,
 0,			simd_fmax4, reg128, reg128,	        reg128,         	b110101110,		c:2,
@@ -443,7 +450,7 @@ svw var reg,			lc rv var,				sw rv reg 0,		,					,					,					,					,
 sv dst src,				lcs rv dst,				lcs rj src,			sw rv rj 0,			,					,					,					,
 svw dst src,			lc rv dst,				lc rj src,			sw rv rj 0,			,					,					,					,
 pop a,					lw a sp 0,				,					,					,					,					,					,
-push a,					push sp a,				,					,					,					,					,					,
+push a,					push sp a 0,			,					,					,					,					,					,
 
 // lcs编译失败的话 自动适配lc
 lcs dst src,			lc dst src,				,					,					,					,					,					,
@@ -546,4 +553,23 @@ HALT_CMD_ADDR,			0x0901ff04,
 UNHALT_CMD_ADDR,		0x0901ff08,
 CTL_REG_RFRSH_ADDR,		0x0901ff20,
 CTL_REG_CONT_ADDR,		0x0901ff18,
+DATA_START_ADDR,		0x09000028,
+STACK_START_ADDR,		0x0900002c,
+RAM_SIZE,				0x00040000,
 IIC_ENDIAN,				little,
+
+// 运行错误bit
+#RUMTIME-ERROR-BITS
+// register,			bit,		error
+r91,					19,			sqrt less than 0
+r91,					18,			log2 less than 0
+r91,					17,			float input error
+r91,					13,			divide by 0
+r91,					12,			ram port a access over flow
+r91,					11,			ram port b access over flow
+r91,					10,			read code segment
+r91,					 9,			write code segment
+r91,					 8,			read stack over flow
+r91,					 7,			write stack over flow
+r91,					 6,			hlt error
+

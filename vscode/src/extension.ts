@@ -28,8 +28,9 @@ export async function activate(context: vscode.ExtensionContext)
 	vscode.window.showInformationMessage("ProcessID:" + process.pid);	
 	let client = new UpasmClient(context.extensionPath);
 	let ext = new UpasmExt(context, client);
-
+	
 	context.subscriptions.push(vscode.commands.registerCommand('upasm.build', ext.onRebuild, ext));
+	context.subscriptions.push(vscode.commands.registerCommand('upasm.reload', ext.openWorkspace, ext));
 	context.subscriptions.push(vscode.commands.registerCommand('upasm.rename', ext.onRename, ext));
 	context.subscriptions.push(vscode.commands.registerTextEditorCommand('upasm.update-registers', ext.onUpdateRegister, ext));
 	context.subscriptions.push(vscode.commands.registerTextEditorCommand('upasm.count-instructions', ext.onCountInstructions, ext));

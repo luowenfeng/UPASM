@@ -339,30 +339,20 @@ export class UpasmReferenceManager
 		return undefined;
 	}
 
-	public getGlobalSymbol(name:string)
-	{
-		return this.buildInfo.symbols.get(name)
-	}
-
-	private checkMacro(filename:string, name:string)
-	{
-		let asmInfo = this.buildInfo.files.get(filename);
-		if (asmInfo == undefined) {
-			asmInfo = this.buildInfo.lowerFiles.get(filename);
+	public getSymbol(filename:string, name:string)
+	{		
+		let file = this.buildInfo.files.get(filename);
+		if (file == undefined) {
+			return this.buildInfo.symbols.get(name)
 		}
-
-		if (asmInfo) {
-			let value = asmInfo.macros.get(name);
-			if (value) {
-				return value;
-			}
+		else {
+			return file.vars.get(name);				
 		}
-		return name;
 	}
 
 	private checkRegister(filename:string, name:string)
 	{
-		name = this.checkMacro(filename, name);
+		// name = this.checkMacro(filename, name);
 		// check alias
 		let value = this.configInfo.regAlias.get(name);
 		if (value) {
@@ -387,10 +377,6 @@ export class UpasmReferenceManager
 			asmInfo = this.buildInfo.lowerFiles.get(filename);
 		}
 		if (asmInfo) {
-			let value = asmInfo.macros.get(symbolname);
-			if (value) {
-				symbolname = value;
-			}
 			let v = asmInfo.vars.get(symbolname);
 			if (v) {
 				addr = v;
