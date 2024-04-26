@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import * as vscode from 'vscode';
 import {
 	LoggingDebugSession,
 	InitializedEvent, TerminatedEvent, StoppedEvent, OutputEvent,
@@ -205,8 +206,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 			for (const arg of args) {
 				text += arg + '\n';
 			}
-			const e: DebugProtocol.OutputEvent = new OutputEvent('Error: '+ text, 'stderr');
-			this.sendEvent(e);
+			vscode.window.showErrorMessage(text);
 			this.sendEvent(new TerminatedEvent());
 		});
 		event.on('warning', (...args) => {
@@ -288,8 +288,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 				throw res.reason;
 			}	
 		} catch (error) {
-			const e: DebugProtocol.OutputEvent = new OutputEvent('Error: '+ error, 'stderr');
-			this.sendEvent(e);
+			vscode.window.showErrorMessage(error as string);
 			this.sendEvent(new TerminatedEvent());
 		}		
 	}
@@ -297,8 +296,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 	shutdown(): void {
 		const res = this.client.stopDebug();
 		if (!res.ok) {
-			const e: DebugProtocol.OutputEvent = new OutputEvent('Error: '+ res.reason, 'stderr');
-			this.sendEvent(e);
+			vscode.window.showErrorMessage(res.reason);
 			this.sendEvent(new TerminatedEvent());
 		}
 		super.shutdown();
@@ -323,8 +321,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 					throw res.reason;
 				}				
 			} catch (error) {
-				const e: DebugProtocol.OutputEvent = new OutputEvent('Error: '+ error, 'stderr');
-				this.sendEvent(e);
+				vscode.window.showErrorMessage(error as string);
 			}
 		}
 		this.sendResponse(response);
@@ -368,8 +365,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 					throw res.reason;
 				}
 			} catch (error) {
-				const e: DebugProtocol.OutputEvent = new OutputEvent('Error: '+ error, 'stderr');
-				this.sendEvent(e);
+				vscode.window.showErrorMessage(error as string);
 				this.sendEvent(new TerminatedEvent());
 			}
 		}
@@ -392,9 +388,8 @@ export class UpasmDebugSession extends LoggingDebugSession {
 			else {
 				throw res.reason;
 			}
-		} catch (error) {			
-			const e: DebugProtocol.OutputEvent = new OutputEvent('Error: '+ error, 'stderr');
-			this.sendEvent(e);
+		} catch (error) {
+			vscode.window.showErrorMessage(error as string);
 			this.sendEvent(new TerminatedEvent());
 		}
 	}
@@ -414,8 +409,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 				throw res.reason;
 			}
 		} catch (error) {
-			const e: DebugProtocol.OutputEvent = new OutputEvent('Error: '+ error, 'stderr');
-			this.sendEvent(e);
+			vscode.window.showErrorMessage(error as string);
 			this.sendEvent(new TerminatedEvent());
 		}
 	}
@@ -435,8 +429,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 				throw res.reason;
 			}
 		} catch (error) {			
-			const e: DebugProtocol.OutputEvent = new OutputEvent('Error: '+ error, 'stderr');
-			this.sendEvent(e);
+			vscode.window.showErrorMessage(error as string);
 			this.sendEvent(new TerminatedEvent());
 		}
 	}
@@ -447,8 +440,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 			this.sendResponse(response);
 		}
 		else {
-			const e: DebugProtocol.OutputEvent = new OutputEvent('Error: '+ res.reason, 'stderr');
-			this.sendEvent(e);
+			vscode.window.showErrorMessage(res.reason);
 			this.sendEvent(new TerminatedEvent());
 		}
 	}
@@ -466,8 +458,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 				throw res.reason;
 			}
 		} catch (error) {
-			const e: DebugProtocol.OutputEvent = new OutputEvent('Error: '+ error, 'stderr');
-			this.sendEvent(e);
+			vscode.window.showErrorMessage(error as string);
 			this.sendEvent(new TerminatedEvent());
 		}
 	}
@@ -599,8 +590,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 					throw res.reason;
 				}				
 			} catch (error) {
-				const e: DebugProtocol.OutputEvent = new OutputEvent('Error: '+ error, 'stderr');
-				this.sendEvent(e);
+				vscode.window.showErrorMessage(error as string);
 				this.sendEvent(new TerminatedEvent());
 			}
 		}
