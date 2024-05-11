@@ -173,10 +173,15 @@ export function padZero(num:number, size:number, radix:number, padChar:string = 
 }
 
 function hex2float(num:number) {
+	var float = 0;
     var sign = (num & 0x80000000) ? -1 : 1;
-    var exponent = ((num >> 23) & 0xff) - 127;
-    var mantissa = 1 + ((num & 0x7fffff) / 0x7fffff);
-    return (sign * mantissa * Math.pow(2, exponent));
+    var exp = ((num >> 23) & 0xff) - 127;
+    var mantissa = ((num & 0x7fffff) + 0x800000).toString(2);
+	for (let i=0; i<mantissa.length; i+=1){
+		float += parseInt(mantissa[i])? Math.pow(2,exp):0;
+		exp--;
+	}
+    return (sign * float);
 }
 
 export class UpasmReference
