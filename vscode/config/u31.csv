@@ -98,7 +98,7 @@ d0_lo,		r96,
 d0_hi,		r97,
 d1_lo,		r98,
 d1_hi,		r99,
-d2_lo,		r100
+d2_lo,		r100,
 d2_hi,		r101,
 d3_lo,		r102,
 d3_hi,		r103,
@@ -109,7 +109,7 @@ d5_hi,		r107,
 d6_lo,		r108,
 d6_hi,		r109,
 d7_lo,		r110,
-d7_hi,		r111
+d7_hi,		r111,
 s0,			r72,
 s1,			r73,
 s2,			r74,
@@ -211,6 +211,8 @@ s7_23,		r95,
 0,			l64_d,	    reg64,						reg32,		    reg32|num,			b001100100,		c:2,
 0,			lw_d,		reg32,						reg32,		    reg32|num,			b001101000,		c:2,
 
+
+
 // 代数运算
 0,			add,		reg32,	reg32|num,		reg32|num,			b101100000,		c:2,
 0,			sub,		reg32,	reg32|num,		reg32|num,			b101100001,		c:2,
@@ -234,6 +236,7 @@ s7_23,		r95,
 0,			muls32,	    reg32,	reg32|num,		reg32|num,			b010010010,		c:2,
 0,			muls32_64,	reg64,	reg32|num,		reg32|num,			b010010110,		c:2,
 0,			muls64_32,	reg64,	reg64,			reg32|num,		 	b010011010,		c:2,
+0,   		muls64_64, 	reg64, 	reg64|num,     	reg64|num,    		b010111110,  	c:2,
 0,			muls64_32f,	reg64,	reg64,			reg32|num,		 	b010011100,		c:2,
 0,			mulc,		reg32,	reg32,			reg32,				b010100000,		c:2,
 0,			mulc_32o,   reg64,	reg32,			reg32,				b010100010,		c:2,
@@ -246,7 +249,7 @@ s7_23,		r95,
 0,			fmulc_conj, reg64,	reg64,			reg64,				b010110000,		c:2,
 0,			divs32f,	reg32,	reg32|num,		reg32|num,	    	b011000000,		c:2,
 0,			divs32,		reg32,	reg32|num,		reg32|num,			b011000010,		c:2,
-0,			divs64_32,  reg64,	reg64|num,	    reg32,		    	b011000110,		c:2,
+0,			divs64_32,  reg64,	reg64|num,	    reg32|num,		    b011000110,		c:2,
 0,			divs64,     reg64,	reg64|num,	    reg64|num,       	b011000100,		c:2,
 0,			fdiv,       reg32,	reg32,		    reg32,       	    b011001000,		c:2,
 0,			cvt64_32,	reg32,	reg64,	     	,		       	    b101001100,		c:2,
@@ -329,7 +332,7 @@ s7_23,		r95,
 0,			simd_match,	reg32,	reg128,			reg128,				b111100000,		c:2,
 0,			simd_and,	reg128,	reg128,			reg128,				b110010000,		c:2,
 0,			simd_or,	reg128,	reg128,			reg128,				b111010000,		c:2,
-// simd_set,设置128bit寄存器的低n个字节为ff,其余高字节为0           
+// simd_set,设置128bit寄存器的低n个字节为ff,其余高字节为0           	
 0,			simd_set,	reg128,	num,			,					b110110000,		c:2,
 0,			simd_2bit_to_1bit,  reg128, reg128,	reg128,				b111110000,		c:2,
 0,			simd_mul,	reg128,	reg128,			reg128,				b110001000,		c:2,
@@ -340,14 +343,14 @@ s7_23,		r95,
 0,   		simd_muls32,        reg64,  reg64, 	reg64,       		b110011000,  	c:2,
 0,   		simd_muls32_add,    reg32,  reg64, 	reg64,       		b110011001,  	c:2,
 0,			simd_8to32, reg128, reg32,	        ,    		     	b111011000,		c:2,
-0,			simd_16to32,reg128, reg64,	        ,    		     	b110111000,		c:2,
+0,			simd_16to32,reg128, reg64,	        ,    		     	b111011010,		c:2,
 0,			simd_8to16, reg128, reg64,	        ,    		     	b111111000,		c:2,
 0,   		simd_32to16,reg64,  reg128,         num,           		b110000100,  	c:2,
 0,   		simd_16to8, reg64,  reg128,         num,           		b111000100,  	c:2,
 0,			simd_add32, reg128, reg128,	        reg128,  	     	b110100100,		c:2,
 0,			simd_sub32, reg128, reg128,	        reg128,  	     	b110100101,		c:2,
 0,			simd_add16, reg128, reg128,	        reg128,  	     	b110100110,		c:2,
-0,			simd_max16, reg32,  reg128,	        ,    		     	b111100100,		c:2,
+0,			simd_max16_8, reg32,  reg128,	    ,    		     	b110001110,		c:2,
 0,			simd_linear,reg64,  reg128,	        num,    	     	b110010100,		c:2,
 0,			simd_relu,  reg64,  reg128,	        num,    	     	b110010101,		c:2,
 0,			simd_leaky, reg64,  reg128,	        num,    	     	b110010110,		c:2,
@@ -368,6 +371,8 @@ s7_23,		r95,
 0,			simd_f32i32,reg128, reg128,	        reg32|num,         	b111011100,		c:2,
 0,			simd_f32i64,reg128, reg64,	        reg32|num,         	b111011101,		c:2,
 
+0,			simd_shuffle64,    reg64,   reg64,	,  		        	b111110110,		c:2,
+0,			simd_shuffle128,   reg128,  reg128,	,  		        	b111110111,		c:2,
 #SPECIAL-INSTRUCTION-TEMPLATE
 //ID,		word,		code,	   flag,	  adr_in1,	 in1_mode, num,		   adr_in2,	  cmd_mode,  in1_type,  in2_en,  in2_mode, in2_type,  out_type, out_adr
 0,			3,			w0 23+9 u, w0 20+3 u, w0 0+20 u, w1 31 u,  w1 20+11 u, w1 0+20 u, w2 27+5 u, w2 25+2 u, w2 24 u, w2 23 u,  w2 21+2 u, w2 20 u,  w2 0+20 u
@@ -423,6 +428,7 @@ s7_23,		r95,
 // 指令别名
 #INSTRUCTION-ALIAS
 // usage,				inst-1,					inst-2,				inst-3,				inst-4,				inst-5,				inst-6,				inst-7,
+set_bits io low value, 	sl rv value low,		or io io rv,		,					,					,					,					,
 lcsu a b,				lcs a b,				,					,					,					,					,					,
 cjmpul a b c,			cjmpug a c b,			,					,					,					,					,					,
 cjmpule a b c,			cjmpuge a c b,			,					,					,					,					,					,
@@ -453,7 +459,6 @@ sv dst src,				lcs rv dst,				lcs rj src,			sw rv rj 0,			,					,					,					,
 svw dst src,			lc rv dst,				lc rj src,			sw rv rj 0,			,					,					,					,
 pop a,					lw a sp 0,				,					,					,					,					,					,
 push a,					push sp a 0,			,					,					,					,					,					,
-
 // lcs编译失败的话 自动适配lc
 lcs dst src,			lc dst src,				,					,					,					,					,					,
 
@@ -554,10 +559,32 @@ v_divs      k a b c d e f g h,      v_divs       k a b c d 1 e 1 f g 1 h,	,		,		
 v_divs_p16  k a b c d e f g h,      v_divs_p16   k a b c d 1 e 1 f g 1 h,	,		,		,					,					,					, 
 v_divs_p31  k a b c d e f g h,      v_divs_p31   k a b c d 1 e 1 f g 1 h,	,		,		,					,					,					, 
 
+
+wait_i2c,				hlt  1,					,					,					,					,					,					,
+wait_img1,				hlt  2,					,					,					,					,					,					,
+wait_img2,				hlt  3,					,					,					,					,					,					,
+wait_vdma1,				hlt  4,					,					,					,					,					,					,
+wait_spi,				hlt  5,					,					,					,					,					,					,
+wait_flash,				hlt  6,					,					,					,					,					,					,
+wait_psram,				hlt  7,					,					,					,					,					,					,
+wait_uart_r,			hlt  8,					,					,					,					,					,					,
+wait_uart_w,			hlt  9,					,					,					,					,					,					,
+wait_time,				hlt 10,					,					,					,					,					,					,
+wait_gpio,				hlt 11,					,					,					,					,					,					,
+wait_music,				hlt 12,					,					,					,					,					,					,
+wait_hw_fft,			hlt 13,					,					,					,					,					,					,
+wait_hw_vec,			hlt 14,					,					,					,					,					,					,
+wait_hw_fast,			hlt 15,					,					,					,					,					,					,
+wait_key,				hlt 16,					,					,					,					,					,					,
+wait_wnd,				hlt 17,					,					,					,					,					,					,
+wait_spi_img1,			hlt 18,					,					,					,					,					,					,
+wait_spi_img2,			hlt 19,					,					,					,					,					,					,
+
+
 // 调试器配置
 #DEBUGER-CONFIG
 // name,				value,
-I2C_ADDR_BYTE,			0x58,
+I2C_ADDR_BYTE,			0x58,	
 CPU_REG_BASE_ADDR,		0x09010000,
 BREAK_POINT_SN,			0x00800000,
 STS_REG_DBG_ADDR,		0x0901ff1c,
@@ -573,17 +600,17 @@ STACK_START_ADDR,		0x0900002c,
 RAM_SIZE,				0x00044000,
 IIC_ENDIAN,				little,
 
-// 运行错误bit
-#RUMTIME-ERROR-BITS
-// register,			bit,		error
-r91,					19,			sqrt less than 0
-r91,					18,			log2 less than 0
-r91,					17,			float input error
-r91,					13,			divide by 0
-r91,					12,			ram port a access over flow
-r91,					11,			ram port b access over flow
-r91,					10,			read code segment
-r91,					 9,			write code segment
-r91,					 8,			read stack over flow
-r91,					 7,			write stack over flow
-r91,					 6,			hlt error
+//// 运行错误bit
+//#RUMTIME-ERROR-BITS
+//// register,			bit,		error
+//r91,					19,			sqrt less than 0
+//r91,					18,			log2 less than 0
+//r91,					17,			float input error
+//r91,					13,			divide by 0
+//r91,					12,			ram port a access over flow
+//r91,					11,			ram port b access over flow
+//r91,					10,			read code segment
+//r91,					 9,			write code segment
+//r91,					 8,			read stack over flow
+//r91,					 7,			write stack over flow
+//r91,					 6,			hlt error

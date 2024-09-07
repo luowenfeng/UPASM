@@ -27,10 +27,19 @@ export interface IVariableInfo {
 	addr:number;
 }
 
+export interface INameRef {
+	content:string;
+	type:string;
+	start:number;
+	end:number;
+	refFile:string;
+	refLine:number;
+}
+
 export interface IAsmInfo {
 	filename:string;
-	lines:Map<number,ILineInfo>;
-	vars:Map<string, number>;
+	lines:Map<number,ILineInfo>;	
+	nameMap:Map<string, INameRef[]>;
 };
 
 export interface IConfigInfo {
@@ -38,11 +47,12 @@ export interface IConfigInfo {
 	reg32Count:number;
 	regAlias:Map<string, string>;
 	regMaps:RegMap[];
+	regAddrs:Map<number, number>;
 };
 
 function decodeAsmInfo(json:any) 
 {
-	let asmInfo:IAsmInfo = {filename:json.filename, lines:new Map<number,ILineInfo>(), vars:new Map<string, number>()};
+	let asmInfo:IAsmInfo = {filename:json.filename, lines:new Map<number,ILineInfo>(), nameMap:new Map<string, INameRef[]>()};
 	for (const line of json.lines) {
 		let l:ILineInfo = {lineNum:line.lineNum, textLen:line.textLen, type:line.type, decoText:line.infoText, tokens:[], errors:[]}
 		for (const token of line.tokens) {
@@ -57,14 +67,19 @@ function decodeAsmInfo(json:any)
 		l.errors = line.errors;		
 		asmInfo.lines.set(l.lineNum, l);
 	}
-	for (const v of json.variables) {
-		asmInfo.vars.set(v.name, v.addr);
+	for (const nmap of json.nameMap) {
+		let nameRefs:INameRef[] = [];
+		for (const ref of nmap.refs) {
+			let nameRef:INameRef = {content:ref.content, type:ref.type, start:ref.start, end:ref.end, refFile:ref.refFile, refLine:ref.refLine};
+			nameRefs.push(nameRef);
+		}		
+		asmInfo.nameMap.set(nmap.name, nameRefs);
 	}
 
 	return asmInfo;
 }
 
-function decodeConfigInfo(json:any)
+function decodeConfigInfo(json:any) : IConfigInfo
 {
 	let regAlias = new Map<string, string>();
 	for (const pair of json.regAlias) {
@@ -76,7 +91,12 @@ function decodeConfigInfo(json:any)
 		regMaps.push(regMap);
 	}
 
-	return {configFile:json.configFile, reg32Count:json.reg32Count, regAlias:regAlias, regMaps:regMaps};
+	let regAddrs = new Map<number, number>();
+	for (const regAddr of json.regAddrs) {
+		regAddrs.set(regAddr.idx, regAddr.addr);
+	}
+
+	return {configFile:json.configFile as string, reg32Count:json.reg32Count as number, regAlias:regAlias, regMaps:regMaps, regAddrs:regAddrs};
 }
 
 
@@ -86,7 +106,46 @@ export interface IBuildInfo {
 	symbols:Map<string, number>;
 	cfg:IConfigInfo;
 	errors:string[];
+
 };
+
+export function getNameRef(buildInfo:IBuildInfo, filename:string, line:number, name:string) :INameRef|undefined
+{
+	try {
+		let file = buildInfo.files.get(filename);
+		if (file != undefined) {
+			let nameRefs = file.nameMap.get(name);
+			if (nameRefs != undefined) {
+				for (const nameRef of nameRefs) {
+					if (line >= nameRef.start && (nameRef.end < 0 || line <= nameRef.end)) {
+						if (nameRef.type == "macro") {
+							return getNameRef(buildInfo, filename, line, nameRef.content);
+						}
+						return nameRef;
+					}
+				}
+			}
+		}
+		let nameRef:INameRef|undefined = undefined;
+		let reg = buildInfo.cfg.regAlias.get(name);
+		if (reg != undefined) {
+			nameRef = {content:reg, type:"reg", start:0, end:-1, refFile:"Global config", refLine:-1};
+			return nameRef;
+		}
+	
+		let addr = buildInfo.symbols.get(name);
+		if (addr != undefined) {
+			nameRef = {content:"0x" + addr.toString(16), type:"symbol", start:0, end:-1, refFile:"Global symbol", refLine:-1};
+		}
+	}
+	catch(error) {
+		console.log(error);
+	}
+	
+
+	return undefined;
+}
+
 
 function decodeBuildInfo(json:any)
 {
@@ -218,6 +277,10 @@ export class UpasmClient {
 		try {
 			let request = {method:'openWorkspace', workspace:workspace, projfile:projfile};
 			let result = JSON.parse(this.inst.processCommand(request)!);
+			if (result.configInfo == undefined) {
+				return {buildInfo:undefined, reason:result.reason as string};
+			}
+
 			const ok = result.result as boolean;
 			if (ok) {
 				return {buildInfo:decodeBuildInfo(result), reason:''};
@@ -243,15 +306,15 @@ export class UpasmClient {
 		}
 	}
 
-	updateFile(filename:string, content:string) : {ok:boolean, reason:string, buildErrors:string[]} {
+	updateFile(filename:string, content:string) : {ok:boolean, reason:string, buildErrors:string[], fileInfo?:IAsmInfo} {
 		let request = {method:'updateFile', filename:filename, content:content};
 		let result = JSON.parse(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
-			return {ok:true, reason:'', buildErrors:result.buildErrors};
+			return {ok:true, reason:'', buildErrors:result.buildErrors, fileInfo:decodeAsmInfo(result.asmInfo)};
 		}
 		else {
-			return {ok:false, reason:result.reason as string, buildErrors:[]};			
+			return {ok:false, reason:result.reason as string, buildErrors:[], fileInfo:undefined};			
 		}
 	}
 

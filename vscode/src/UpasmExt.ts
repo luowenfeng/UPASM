@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs-extra';
-import { IAsmInfo, IBuildInfo, IConfigInfo, IUpasmDebuggerListener, UpasmClient } from './UpasmClient';
+import { IAsmInfo, IBuildInfo, IConfigInfo, IUpasmDebuggerListener, UpasmClient, getNameRef } from './UpasmClient';
 import { tokenTypeText } from './extension';
 import { EventEmitter } from 'stream';
 import { UpasmDebugSession } from './UpasmDebugSession';
@@ -286,6 +286,20 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 						};
 					}
 				}
+				else {
+					if (this.buildInfo) {
+						let text = document.lineAt(position.line).text.substring(tk.start, tk.start+tk.length);
+						let nameRef = getNameRef(this.buildInfo!, document.fileName, position.line, text);
+						if (nameRef) {
+							if (nameRef.refLine >= 0) {
+								return {contents:[nameRef.content, nameRef.refFile + '+' + (nameRef.refLine+1).toString()]};
+							}
+							else {
+								return {contents:[nameRef.content]};
+							}
+						}
+					}
+				}
 				break;
 			}
 		}
@@ -301,6 +315,18 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 			if (tk.start <= position.character && tk.start + tk.length >= position.character) {
 				if (tk.refText) {
 					return new vscode.Location(vscode.Uri.file(tk.refFilename!), new vscode.Position(tk.refLineNum!, 0));
+				}
+				else {
+					if (this.buildInfo) {
+						let text = document.lineAt(position.line).text.substring(tk.start, tk.start+tk.length);
+						let nameRef = getNameRef(this.buildInfo!, document.fileName, position.line, text);
+						if (nameRef) {
+							if (nameRef.refLine >= 0) {
+								return new vscode.Location(vscode.Uri.file(nameRef.refFile!), new vscode.Position(nameRef.refLine!, 0));
+							}
+						}
+					}
+					
 				}
 				break;
 			}
@@ -413,6 +439,9 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 					const res = this.client.updateFile(event.document.fileName, event.document.getText());
 					if (!res.ok) {
 						this.outputChannel.appendLine(res.reason);
+					}
+					else {
+						this.buildInfo!.files.set(res.fileInfo!.filename, res.fileInfo!);
 					}
 				}
 				else {

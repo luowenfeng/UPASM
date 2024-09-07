@@ -1,4 +1,4 @@
-import { IBuildInfo, IConfigInfo } from "./UpasmClient";
+import { IBuildInfo, IConfigInfo, getNameRef } from "./UpasmClient";
 import { REG256_REF_ID } from "./UpasmDebugSession";
 import { IUpasmData, UpasmWatcher } from "./UpasmWatcher";
 
@@ -31,7 +31,7 @@ export function decodeDataFormat(text:string)
 	case 'h': fmt.type = 'hex'; break;
 	case 'u': fmt.type = 'unsigned_decimal'; break;
 	case 's': fmt.type = 'singed_decimal'; break;
-	default: throw new Error('Second letter for format should be h|d.');
+	default: throw new Error('Second letter for format should be h|u|s.');
 	}
 
 	return fmt;
@@ -108,6 +108,34 @@ function unsigned_short(v:number)
 	return v;
 }
 
+const max_int32 = 2147483647; // 0x7FFFFFFF
+function signed_word(v:number)
+{
+	if (v > max_int32) {
+		v = -(max_uint32 + 1 - v);
+	}
+	return v;
+}
+
+const max_int16 = 32767; // 0x7FFF
+function signed_short(v:number)
+{
+	if (v > max_int16) {
+		v = -(max_uint16 + 1 - v);
+	}
+	return v;
+}
+
+const max_int8 = 127; // 0x7F
+function signed_byte(v:number)
+{
+	if (v > max_int8) {
+		v = -(max_uint8 + 1 - v);
+	}
+	return v;
+}
+
+
 export function short_2_bytes(v:number)
 {
 	v = unsigned_short(v);
@@ -173,6 +201,8 @@ export function padZero(num:number, size:number, radix:number, padChar:string = 
 }
 
 function hex2float(num:number) {
+	if (num == 0) return 0;
+
 	var float = 0;
     var sign = (num & 0x80000000) ? -1 : 1;
     var exp = ((num >> 23) & 0xff) - 127;
@@ -210,7 +240,7 @@ export class UpasmReference
 			for (let i=0; i<bytes.length; i+=4) {
 				let v = bytes_2_word(bytes, i);
 				if (this.format.type == 'singed_decimal') {
-					v = unsigned_word(v);
+					v = signed_word(v);
 				}
 				else if (this.format.type == 'float') {
 					v = hex2float(v);
@@ -223,7 +253,7 @@ export class UpasmReference
 			for (let i=0; i<bytes.length; i+=2) {
 				let v = bytes_2_short(bytes, i);
 				if (this.format.type == 'singed_decimal') {
-					v = unsigned_short(v);
+					v = signed_short(v);
 				}
 				codes.push(v);
 			}
@@ -233,7 +263,7 @@ export class UpasmReference
 			for (const b of this.data.bytes) {
 				let v = b;
 				if (this.format.type == 'singed_decimal') {
-					v = unsigned_byte(v);
+					v = signed_byte(v);
 				}
 				codes.push(v);
 			}
@@ -279,8 +309,6 @@ interface IRegMapInfo {
 	bit_start:number;
 	bit_len:number;
 }
-
-
 
 export class UpasmReferenceManager 
 {
@@ -344,28 +372,31 @@ export class UpasmReferenceManager
 		return undefined;
 	}
 
-	public getSymbol(filename:string, name:string)
-	{		
-		let file = this.buildInfo.files.get(filename);
-		if (file == undefined) {
-			return this.buildInfo.symbols.get(name)
-		}
-		else {
-			return file.vars.get(name);				
-		}
+	public getNamedValue(filename:string, line:number, name:string)
+	{
+		let nameRef = getNameRef(this.buildInfo, filename, line, name);
+		if (nameRef != undefined) {
+			switch(nameRef.type) {
+			case "reg": 
+			case "func_reg":
+				return this.buildInfo.cfg.regAddrs.get(parseInt(nameRef.content.substring(1)));
+				
+			case "var": 
+			case "symbol": 
+				return parseInt(nameRef.content);
+
+			case "func_var": break;
+			}
+		}	
+				
+		return undefined;
 	}
 
-	private checkRegister(filename:string, name:string)
+	private checkRegister(filename:string, line:number, name:string)
 	{
-		// name = this.checkMacro(filename, name);
-		// check alias
-		let value = this.configInfo.regAlias.get(name);
-		if (value) {
-			name = value;
-		}
-
-		if (name[0] == 'r') {
-			let v = Number.parseInt(name.substring(1), 10);
+		let nameRef = getNameRef(this.buildInfo, filename, line, name);
+		if (nameRef != undefined && (nameRef.type == "reg" || nameRef.type == "func_reg")) {
+			let v = Number.parseInt(nameRef.content.substring(1), 10);
 			if (v >= 0) {
 				return v;
 			}
@@ -373,24 +404,7 @@ export class UpasmReferenceManager
 		return -1;
 	}
 	
-
-	private getSymbolAddr(filename:string, symbolname:string)
-	{
-		let addr = -1;
-		let asmInfo = this.buildInfo.files.get(filename);
-		if (asmInfo == undefined) {
-			asmInfo = this.buildInfo.lowerFiles.get(filename);
-		}
-		if (asmInfo) {
-			let v = asmInfo.vars.get(symbolname);
-			if (v) {
-				addr = v;
-			}
-		}
-		return addr;
-	}
-
-	private decodeExpression(filename:string, expression:string)
+	private decodeExpression(filename:string, line:number, expression:string)
 	{
 		let key:IUpasmRefKey = {isRegister:false, addrOrIdx:-1, length:0, format:'wh', text:''};
 		let parts = expression.split(' ').filter(item => item != '');
@@ -398,7 +412,7 @@ export class UpasmReferenceManager
 			throw new Error('Bad expression: ' + expression);
 		}
 
-		let v = this.checkRegister(filename, parts[0]);
+		let v = this.checkRegister(filename, line, parts[0]);
 		if (v >= 0) {
 			if (parts.length == 2) {
 				key.format = parts[1];
@@ -432,8 +446,8 @@ export class UpasmReferenceManager
 			}
 	
 			if (offset >= 0) {
-				let addr = this.getSymbolAddr(filename, symName);
-				if (addr >= 0) {
+				let addr = this.getNamedValue(filename, line, symName);
+				if (addr != undefined && !isNaN(addr) && addr >= 0) {
 					key.addrOrIdx = addr + offset;
 				}
 				else {
@@ -462,9 +476,9 @@ export class UpasmReferenceManager
 		return this.watcher.regs[idx];
 	}
 
-	public watchExpression(filename:string, expression:string)
+	public watchExpression(filename:string, line:number, expression:string)
 	{
-		let key = this.decodeExpression(filename, expression);
+		let key = this.decodeExpression(filename, line, expression);
 		if (key.text == '') {
 			throw new Error('Invalid expression "' + expression + '"');
 		}

@@ -30,10 +30,17 @@ interface IRWCommand {
 }
 
 function hex2float_str(num:number) {
+    if (num == 0) return '0';
+
+	var float = 0;
     var sign = (num & 0x80000000) ? -1 : 1;
-    var exponent = ((num >> 23) & 0xff) - 127;
-    var mantissa = 1 + ((num & 0x7fffff) / 0x7fffff);
-    return (sign * mantissa * Math.pow(2, exponent)).toString();
+    var exp = ((num >> 23) & 0xff) - 127;
+    var mantissa = ((num & 0x7fffff) + 0x800000).toString(2);
+	for (let i=0; i<mantissa.length; i+=1){
+		float += parseInt(mantissa[i])? Math.pow(2,exp):0;
+		exp--;
+	}
+    return (sign * float).toString();
 }
 
 function float2hex(d:number) {
@@ -72,7 +79,7 @@ function float2hex(d:number) {
     return parseInt(numberFull, 2);//.toString(16);
 }
 
-function decodeRWCommand(expression:string, filename:string, refMgr:UpasmReferenceManager)
+function decodeRWCommand(expression:string, filename:string, currLine:number, refMgr:UpasmReferenceManager)
 {
 	let cmd:IRWCommand = {type:'invalid', step:4, addr:-1, lengthOrValue:-1, toFile:"", append:true, hex_or_dec:'hex'};
 	let parts = expression.split(' ').filter(item => item != '');
@@ -95,9 +102,9 @@ function decodeRWCommand(expression:string, filename:string, refMgr:UpasmReferen
 				let src = parts[1].split('+');
 				let base = Number.parseInt(src[0]);
 				if (isNaN(base)) {
-					let addr = refMgr.getSymbol(filename, src[0]);
-					if (addr != undefined) {
-						base = addr;
+					let num = refMgr.getNamedValue(filename, currLine, src[0]);
+					if (num != undefined && !isNaN(num)) {
+						base = num;
 					}
 				}
 				let off = Number.parseInt(src[1]);
@@ -106,9 +113,9 @@ function decodeRWCommand(expression:string, filename:string, refMgr:UpasmReferen
 				}
 			}
 			else {
-				let addr = refMgr.getSymbol(filename, parts[1]);
-				if (addr != undefined) {
-					cmd.addr = addr;
+				let num = refMgr.getNamedValue(filename, currLine, parts[1]);
+				if (num != undefined && !isNaN(num)) {
+					cmd.addr = num;
 				}
 			}
 		}
@@ -451,6 +458,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 			if (res.ok) {
 				this.currFilename = res.filename;
 				this.currLine = res.lineNum;
+				this.refMgr.updateWatcher();
 				this.sendResponse(response);
 				this.sendEvent(new StoppedEvent('step', UPASM_THREAD));
 			}
@@ -601,7 +609,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 	{
 		let ref:UpasmReference|undefined = undefined;
 		try {
-			ref = this.refMgr.watchExpression(this.currFilename, expression);	
+			ref = this.refMgr.watchExpression(this.currFilename, this.currLine, expression);	
 		} catch (error) {
 			return {
 				result: 'Error:' + error,
@@ -643,14 +651,12 @@ export class UpasmDebugSession extends LoggingDebugSession {
 				expression = this.lastExpression;
 			}
 
-			const cmd = decodeRWCommand(expression, this.currFilename, this.refMgr);
+			const cmd = decodeRWCommand(expression, this.currFilename, this.currLine, this.refMgr);
 			if (cmd.type != 'invalid') {
 				try {
 					if (cmd.type == 'read') {
 						let res = this.client.readMemory(cmd.addr, cmd.lengthOrValue);
-						if (res.ok) {
-							
-
+						if (res.ok) {							
 							let codes:number[];
 							let n = res.bytes.length/cmd.step;
 							if (cmd.step == 1) {
