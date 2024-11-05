@@ -15,7 +15,6 @@
 		"Debuggers"
 	],
 	"activationEvents": [
-		"onLanguage:upasm",
 		"onDebugResolve:upasm",
 		"workspaceContains:*.upasm"
 	],

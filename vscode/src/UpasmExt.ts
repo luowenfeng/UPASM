@@ -172,7 +172,8 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 	onDebugPause(filename:string, lineNum:number):void
 	{
 		try {
-			this.watcher?.updateRead();
+			//this.watcher?.updateRead();
+			this.refMgr?.updateWatcher();
 			this.dbgSession?.setCurrentPosition(filename, lineNum);
 			this.dbgEvent.sendEvent('stopOnStep');	
 		} catch (error) {
@@ -325,8 +326,7 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 								return new vscode.Location(vscode.Uri.file(nameRef.refFile!), new vscode.Position(nameRef.refLine!, 0));
 							}
 						}
-					}
-					
+					}					
 				}
 				break;
 			}
@@ -628,7 +628,10 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 				}
 				if (outRes.ok) {
 					this.outputChannel.appendLine('Build "' + projfile + '" succeed at ' + (new Date()).toString());
-					this.outputChannel.appendLine('Output files:' + outRes.files);
+					this.outputChannel.appendLine('Output files:\n');
+					for (const name of outRes.files) {
+						this.outputChannel.appendLine('\t'+name);
+					}
 					//for(const filename of outRes.files) {
 					//	if (filename.endsWith('.bin')) {
 					//		this.outputChannel.appendLine('binary file size:' + fs.fstatSync(filename).size + ' bytes');

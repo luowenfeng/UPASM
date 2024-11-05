@@ -313,7 +313,6 @@ interface IRegMapInfo {
 export class UpasmReferenceManager 
 {
 	private buildInfo:IBuildInfo;
-	private configInfo:IConfigInfo;
 	private watcher:UpasmWatcher;
 	private refID = REG256_REF_ID + 1;
 	private refTextMap = new Map<string, UpasmReference>();
@@ -330,7 +329,6 @@ export class UpasmReferenceManager
 	{
 		this.watcher = watcher;
 		this.buildInfo = buildInfo;
-		this.configInfo = configInfo;
 		for (const reg of watcher.regs) {
 			let ref = new UpasmReference(true, reg, this.refID++);
 			let name = 'r' + reg.idxOrAddr + ' wh';
@@ -394,6 +392,13 @@ export class UpasmReferenceManager
 
 	private checkRegister(filename:string, line:number, name:string)
 	{
+		if (name[0] == 'r') {
+			let v = parseInt(name.substring(1));
+			if (v >= 0) {
+				return v;
+			}
+		}
+
 		let nameRef = getNameRef(this.buildInfo, filename, line, name);
 		if (nameRef != undefined && (nameRef.type == "reg" || nameRef.type == "func_reg")) {
 			let v = Number.parseInt(nameRef.content.substring(1), 10);

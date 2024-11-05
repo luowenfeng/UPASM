@@ -119,6 +119,15 @@ export function getNameRef(buildInfo:IBuildInfo, filename:string, line:number, n
 				for (const nameRef of nameRefs) {
 					if (line >= nameRef.start && (nameRef.end < 0 || line <= nameRef.end)) {
 						if (nameRef.type == "macro") {
+							if (nameRef.content[0] == 'r') {
+								let v = parseInt(nameRef.content.substring(1));
+								if (!isNaN(v) && v >= 0) {
+									let regRef = nameRef;
+									regRef.type = "reg";
+									return regRef;
+								}
+							}
+
 							return getNameRef(buildInfo, filename, line, nameRef.content);
 						}
 						return nameRef;
