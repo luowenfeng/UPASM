@@ -1,5 +1,3 @@
-import * as ref from 'ref-napi'
-import * as ffi from 'ffi-napi'
 import * as path from 'path';
 import { clearInterval } from 'timers';
 import { RegMap } from './UpasmExt';
@@ -181,68 +179,58 @@ function decodeBuildInfo(json:any)
 
 
 class UpasmInstWrap {
-	private constructor(dll: {
-		UPASMInst_Create: ffi.ForeignFunction<ref.Pointer<unknown>, [string]>;
-		UPASMInst_Destroy: ffi.ForeignFunction<void, [ref.Pointer<unknown>]>;
-		UPASMInst_ProcessCommand: ffi.ForeignFunction<string | null, [ref.Pointer<unknown>, string]>;
-		UPASMInst_LockMessage: ffi.ForeignFunction<void, [ref.Pointer<unknown>]>;
-		UPASMInst_GetMessage: ffi.ForeignFunction<string|null, [ref.Pointer<unknown>]>;
-		UPASMInst_UnlockMessage: ffi.ForeignFunction<void, [ref.Pointer<unknown>]>;
-	}, inst:ref.Pointer<unknown>)
+	private constructor(inst: {
+		createInstance: (arg0: string) => void;
+		destroyInstance: (arg0: void) => void;
+		processCommand: (arg0: void, arg1: string) => string; 
+		readMessage: (arg0: void) => string; 
+		lockMessage: (arg0: void) => void; 
+		unlockMessage: (arg0: void) => void; 
+		}, ptr:void)
 	{
-		this.dll = dll;
 		this.inst = inst;
+		this.ptr = ptr;
 	}
 
 	public static create(extensionPath:string) {
-		const LIB_FILE = (() => {
-			switch (process.platform) {
-			case 'darwin': return 'libUPASM.dylib';
-			case 'linux': return 'libUPASM.so';
-			case 'win32': return 'libUPASM.dll';
-			default: return 'UNKNOWN-platform';
-			}
-		})();
-
-		const libpath = path.resolve(extensionPath, 'lib', process.platform, process.arch, LIB_FILE);
-		if (process.platform == 'win32') {
-			const kernel32 = ffi.Library('kernel32', {
-				'SetDllDirectoryA': ['bool', ['string']],
-			});
-			kernel32.SetDllDirectoryA(path.dirname(libpath));
+		let req_name = 'UPASMInstanceDLL_';
+		let dll_name = "libUPASM_";
+		if (process.arch === 'x64') {
+			req_name += 'x64.node';
+			dll_name += 'x64.dll';
+		} else if (process.arch === 'ia32') {
+			req_name += 'x86.node';
+			dll_name += 'x86.dll';
+		} else {
+			throw new Error(`Unsupported architecture: ${process.arch}`);
 		}
-		let dll = ffi.Library(libpath, {
-			'UPASMInst_Create':['void*', ['string']],
-			'UPASMInst_Destroy':['void', ['void*']],
-			'UPASMInst_ProcessCommand':['string', ['void*', 'string']],
-			'UPASMInst_LockMessage':['void', ['void*']],
-			'UPASMInst_GetMessage':['string', ['void*']],
-			'UPASMInst_UnlockMessage':['void', ['void*']],
-		});
-		
-		let inst = dll.UPASMInst_Create(extensionPath);
+
+		const req_path = path.resolve(extensionPath, 'lib', process.platform, req_name);
+		let inst = require(req_path);
 		if (inst == null) {
 			throw new Error("UPASMInst_Create failed...");
 		}
+		inst.loadExtensionDLL(path.resolve(extensionPath, 'lib', process.platform, dll_name));
 
-		return new UpasmInstWrap(dll, inst);
+		let ptr = inst.createInstance(extensionPath);
+		return new UpasmInstWrap(inst, ptr);
 	}
 
 	dispose() {
-		this.dll.UPASMInst_Destroy(this.inst)
+		this.inst.destroyInstance(this.ptr)
 	}
 
 	processCommand(obj:any)
 	{
 		let text = JSON.stringify(obj);
-		return this.dll.UPASMInst_ProcessCommand(this.inst, text);
+		return this.inst.processCommand(this.ptr, text);
 	}
 
 	getMessages() {
 		let messages = [];
-		this.dll.UPASMInst_LockMessage(this.inst);
+		this.inst.lockMessage(this.ptr);
 		while(true) {
-			let msg = this.dll.UPASMInst_GetMessage(this.inst);
+			let msg = this.inst.readMessage(this.ptr);
 			if (msg != null) {
 				messages.push(msg);
 			}
@@ -250,12 +238,12 @@ class UpasmInstWrap {
 				break;
 			}
 		}
-		this.dll.UPASMInst_UnlockMessage(this.inst);
+		this.inst.unlockMessage(this.ptr);
 		return messages;
 	}
 
-	private dll;
 	private inst;
+	private ptr;
 }
 
 export interface IUpasmDebuggerListener {
