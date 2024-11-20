@@ -1,5 +1,4 @@
 import * as path from 'path';
-import { clearInterval } from 'timers';
 import { RegMap } from './UpasmExt';
 
 export interface ITokenInfo {
@@ -257,7 +256,7 @@ export interface IUpasmDebuggerListener {
 export class UpasmClient {
 	// public buildInfo?:IBuildInfo;
 	private inst;
-	private dbgInterval?:NodeJS.Timeout;
+	private dbgRunning = false;
 	private _dbgListener?:IUpasmDebuggerListener;
 	public set debugListener(dbg:IUpasmDebuggerListener) {this._dbgListener = dbg;}
 
@@ -267,6 +266,7 @@ export class UpasmClient {
 
 	public dispose()
 	{
+		this.dbgRunning = false;
 		this.inst.dispose();
 	}
 
@@ -368,39 +368,31 @@ export class UpasmClient {
 		return JSON.parse(this.inst.processCommand(request)!);
 	}
 
-	private onDebugStarted()
+	private onDebugQuerryMessage()
 	{
-		this.dbgInterval = setInterval(()=>{
-			const msgs = this.inst.getMessages();
-			for (const msg of msgs) {
-				const msgJS = JSON.parse(msg);
-				switch(msgJS.responseTo as string) {
-				case 'debugEvent-error':
-					this._dbgListener?.onDebugEror(msgJS.message);
-					this.onDebugStopped();
-					break;
-				case 'debugEvent-end':
-					this._dbgListener?.onDebugEnd(msgJS.message);
-					this.onDebugStopped();					
-					break;
-				case 'debugEvent-pause':
-					this._dbgListener?.onDebugPause(msgJS.filename, msgJS.lineNum);
-					break;
-				case 'debugEvent-message':
-					this._dbgListener?.onDebugMessage(msgJS.message);
-					break;
-				}
+		const msgs = this.inst.getMessages();
+		for (const msg of msgs) {
+			const msgJS = JSON.parse(msg);
+			switch(msgJS.responseTo as string) {
+			case 'debugEvent-error':
+				this._dbgListener?.onDebugEror(msgJS.message);
+				this.dbgRunning = false;
+				break;
+			case 'debugEvent-end':
+				this._dbgListener?.onDebugEnd(msgJS.message);
+				this.dbgRunning = false;				
+				break;
+			case 'debugEvent-pause':
+				this._dbgListener?.onDebugPause(msgJS.filename, msgJS.lineNum);
+				break;
+			case 'debugEvent-message':
+				this._dbgListener?.onDebugMessage(msgJS.message);
+				break;
 			}
-		}, 100);
-	}
-
-	private onDebugStopped()
-	{
-		if (this.dbgInterval) {
-			clearInterval(this.dbgInterval);
-			this.dbgInterval = undefined;
 		}
-		
+		if (this.dbgRunning) {
+			setTimeout(this.onDebugQuerryMessage, 100);
+		}
 	}
 
 	//#region DEBUGGER
@@ -410,7 +402,8 @@ export class UpasmClient {
 		let result = JSON.parse(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
-			this.onDebugStarted();
+			this.dbgRunning = true;
+			this.onDebugQuerryMessage();
 			return {
 				ok:true, 
 				reason:'',
@@ -440,7 +433,7 @@ export class UpasmClient {
 		let result = JSON.parse(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
-			this.onDebugStarted();
+			this.dbgRunning = true;
 			return {
 				ok:true, 
 				reason:'',
@@ -560,7 +553,7 @@ export class UpasmClient {
 		let result = JSON.parse(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
-			this.onDebugStopped();
+			this.dbgRunning = false;
 			this._dbgListener?.onDebugEnd(result.message);
 			return {
 				ok:true, 
