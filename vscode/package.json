@@ -26,9 +26,7 @@
 				"extensions": [
 					".upasm",
 					".upinc",
-					".upconf",
-					".asm",
-					".inc"
+					".upconf"
 				],
 				"configuration": "./language-configuration.json"
 			}
@@ -54,13 +52,17 @@
 					"upasm.project.filename": {
 						"type": "string",
 						"default": ""
+					},
+					"upasm.debugger.rowbytes": {
+						"type":"number",
+						"default":"32"
 					}
 				}
 			}
 		],
 		"configurationDefaults": {
 			"[upasm]": {
-				"editor.wordBasedSuggestions": true,
+				"editor.wordBasedSuggestions": "currentDocument",
 				"editor.semanticHighlighting.enabled": true
 			}
 		},

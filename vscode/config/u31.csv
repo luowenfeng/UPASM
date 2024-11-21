@@ -602,15 +602,15 @@ IIC_ENDIAN,				little,
 
 //// 运行错误bit
 //#RUMTIME-ERROR-BITS
-//// register,			bit,		error
-//r91,					19,			sqrt less than 0
-//r91,					18,			log2 less than 0
-//r91,					17,			float input error
-//r91,					13,			divide by 0
-//r91,					12,			ram port a access over flow
-//r91,					11,			ram port b access over flow
-//r91,					10,			read code segment
-//r91,					 9,			write code segment
-//r91,					 8,			read stack over flow
-//r91,					 7,			write stack over flow
-//r91,					 6,			hlt error
+// register,			bit,		error
+r91,					19,			sqrt less than 0
+r91,					18,			log2 less than 0
+r91,					17,			float input error
+r91,					13,			divide by 0
+r91,					12,			ram port a access over flow
+r91,					11,			ram port b access over flow
+r91,					10,			read code segment
+r91,					 9,			write code segment
+r91,					 8,			read stack over flow
+r91,					 7,			write stack over flow
+r91,					 6,			hlt error

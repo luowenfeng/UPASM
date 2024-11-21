@@ -655,8 +655,12 @@ export class UpasmDebugSession extends LoggingDebugSession {
 			if (cmd.type != 'invalid') {
 				try {
 					if (cmd.type == 'read') {
+						let rowbytes = vscode.workspace.getConfiguration().get<number>('upasm.debugger.rowbytes');
+						if (rowbytes == undefined || rowbytes % cmd.step != 0) {
+							rowbytes = 32;
+						}
 						let res = this.client.readMemory(cmd.addr, cmd.lengthOrValue);
-						if (res.ok) {							
+						if (res.ok) {
 							let codes:number[];
 							let n = res.bytes.length/cmd.step;
 							if (cmd.step == 1) {
@@ -679,7 +683,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 									let text = padZero(codes[i], cmd.step*2, 16) + ' '; 
 									result += text;
 									appendText += text;
-									if ((i + 1) % (32/cmd.step) == 0) {
+									if ((i + 1) % (rowbytes/cmd.step) == 0) {
 										result += '\n';
 									}
 								}
@@ -691,7 +695,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 									let text = padZero(v, cmd.step*3, 10, ' ') + ' '; 
 									result += text;
 									appendText += text;
-									if ((i + 1) % (32/cmd.step) == 0) {
+									if ((i + 1) % (rowbytes/cmd.step) == 0) {
 										result += '\n';
 									}
 								}
@@ -702,7 +706,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 									let text = hex2float_str(codes[i]) + ' ';
 									result += text;
 									appendText += text;
-									if ((i + 1) % (8) == 0) {
+									if ((i + 1) % (rowbytes/4) == 0) {
 										result += '\n';
 									}
 								}
