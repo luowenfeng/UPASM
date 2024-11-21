@@ -391,7 +391,7 @@ export class UpasmClient {
 			}
 		}
 		if (this.dbgRunning) {
-			setTimeout(this.onDebugQuerryMessage, 100);
+			setTimeout(() => { this.onDebugQuerryMessage() }, 100);
 		}
 	}
 
