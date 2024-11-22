@@ -862,6 +862,7 @@ C:
 #### 条件编译`#if` `#else` `#endif` `#elif`
 - 支持`#if` `#else` `#endif` `#elif`用于指定编译内容.
 - `#if`/`#elif`后面可以接任意的表达式. 基本上与C一致.
+- 出现在`#if`后的表达式中的值, 如果未被定义成数字, 则按0来处理.
 
 #### `$push_regs`和`$pop_regs`
 - `$push_regs`和`$pop_regs`用于同时入栈/出栈多个寄存器
