@@ -135,15 +135,22 @@ FPU=fpu.upconf
 搜索框中输入`UPASM`, 注意选择`工作区`而不是`用户`!!
 ![](readme-img/setting-2.png)
 
-这里有1个可配置项目:`upasm.project.filename`
+这里有3个可配置项目:`upasm.project.filename`, `upasm.debugger.rowbytes` , `upasm.config.showdeco`
 
 #### 工程文件`Upasm>Project:Filename`
-默认为空, 可以指定工作路径下的任意文件名(**相对路径**)作为工程文件.  
+字符串类型, 默认为空.  
+可以指定工作路径下的任意文件名(**相对路径**)作为工程文件.  
 默认为空时, 会指定插件安装路径下的`config/default.upproj`作为工程文件.
 
 #### 调试输出行宽`Upasm>Debugger:Rowbytes`
-调试状态下, 使用`rw`,`rs`,`rb`,`rf`命令输出时, 每行打印的字节数, 默认为32.  
+数字类型, 默认值为32.  
+调试状态下, 使用`rw`,`rs`,`rb`,`rf`命令输出时, 每行打印的字节数.  
 注意, 这个值需要能整除输出的每个元素的字节数: `rw`,`rf`时, 需要整除4; `rs`时需要正常2. 如果不满足整除关系, 将按默认值32处理.
+
+#### 是否实时显示编译结果`Upasm>Config:Showdeco`
+布尔类型, 默认为`true`, 控制是否在每一行的结尾处显示编译结果.  
+为`true`时, 所有编译信息都会显示.
+为`false`时, 只显示编译错误.
 
 #### Settings.json
 第一次设置完成后, 在工作区下的.vscode目录下会生成一个settings.json文件, 记录上述选项, 后续修改这些选项时可以直接改settings.json文件, 删除一行(或者整个settings.json文件)表示使用默认值:
