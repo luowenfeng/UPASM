@@ -69,6 +69,8 @@ function updateDecorations(activeEditor:vscode.TextEditor|null, files:Map<string
 	if (activeEditor == null)
 		return;
 
+	let showdeco = vscode.workspace.getConfiguration().get<boolean>('upasm.config.showdeco');
+
 	let filename = activeEditor.document.fileName;
 	let fileInfo = files.get(filename);
 	if (!fileInfo) {
@@ -79,15 +81,17 @@ function updateDecorations(activeEditor:vscode.TextEditor|null, files:Map<string
 		for (const c of fileInfo.lines.values()) {
 			if (c.type == 'empty' && c.decoText == '') continue;
 
-			decorations.push({
-				range: new vscode.Range(c.lineNum, 0, c.lineNum, c.textLen),
-				renderOptions: {
-					after:{
-						contentText: c.decoText,
-						backgroundColor: { id: getDecorationColor(c.type) },
+			if (showdeco || c.type == 'error') {
+				decorations.push({
+					range: new vscode.Range(c.lineNum, 0, c.lineNum, c.textLen),
+					renderOptions: {
+						after:{
+							contentText: c.decoText,
+							backgroundColor: { id: getDecorationColor(c.type) },
+						}
 					}
-				}
-			});
+				});
+			}
 		}
 	} catch (error) {
 		console.log(error);

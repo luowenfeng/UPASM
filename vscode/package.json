@@ -49,6 +49,10 @@
 			{
 				"title": "UPASM",
 				"properties": {
+					"upasm.config.showdeco": {
+						"type":"boolean",
+						"default":true
+					},
 					"upasm.project.filename": {
 						"type": "string",
 						"default": ""
