@@ -252,6 +252,13 @@ export interface IUpasmDebuggerListener {
 	onDebugPause(filename:string, lineNum:number):void;
 }
 
+function parseJson(text:string) {
+	try {
+		return JSON.parse(text);
+	} catch (error) {
+		return {result:false, reason:error}	
+	}		
+}
 
 export class UpasmClient {
 	// public buildInfo?:IBuildInfo;
@@ -273,7 +280,7 @@ export class UpasmClient {
 	openWorkspace(workspace:string, projfile:string) : {buildInfo?:IBuildInfo, reason:string} {
 		try {
 			let request = {method:'openWorkspace', workspace:workspace, projfile:projfile};
-			let result = JSON.parse(this.inst.processCommand(request)!);
+			let result = parseJson(this.inst.processCommand(request)!);
 			if (result.configInfo == undefined) {
 				return {buildInfo:undefined, reason:result.reason as string};
 			}
@@ -293,7 +300,7 @@ export class UpasmClient {
 
 	getFile(filename:string) : {fileInfo?:IAsmInfo, reason:string} {		
 		let request = {method:'getFile', filename:filename};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {fileInfo:decodeAsmInfo(result.asmInfo), reason:''};
@@ -305,7 +312,7 @@ export class UpasmClient {
 
 	updateFile(filename:string, content:string) : {ok:boolean, reason:string, buildErrors:string[], fileInfo?:IAsmInfo} {
 		let request = {method:'updateFile', filename:filename, content:content};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {ok:true, reason:'', buildErrors:result.buildErrors, fileInfo:decodeAsmInfo(result.asmInfo)};
@@ -317,7 +324,7 @@ export class UpasmClient {
 
 	reloadFile(filename:string): {ok:boolean, reason:string, buildErrors:string[]} {
 		let request = {method:'reloadFile', filename:filename};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {ok:true, reason:'', buildErrors:result.buildErrors};
@@ -329,7 +336,7 @@ export class UpasmClient {
 
 	rebuild() : {buildInfo?:IBuildInfo, reason:string} {		
 		let request = {method:'rebuild'};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {buildInfo:decodeBuildInfo(result), reason:result.errors as string};
@@ -341,7 +348,7 @@ export class UpasmClient {
 
 	output() {
 		let request = {method:'output'};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {ok:true, files:result.files, reason:''};
@@ -353,7 +360,7 @@ export class UpasmClient {
 
 	gensource(srcfile:string) {
 		let request = {method:'gensource', srcfile:srcfile};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {ok:true, incname:result.incname as string, asmname:result.asmname as string, reason:''};
@@ -365,14 +372,14 @@ export class UpasmClient {
 
 	countInstructions(file:string, start:number, end:number) {
 		let request = {method:'countInstructions', filename:file, start:start, end:end};
-		return JSON.parse(this.inst.processCommand(request)!);
+		return parseJson(this.inst.processCommand(request)!);
 	}
 
 	private onDebugQuerryMessage()
 	{
 		const msgs = this.inst.getMessages();
 		for (const msg of msgs) {
-			const msgJS = JSON.parse(msg);
+			const msgJS = parseJson(msg);
 			switch(msgJS.responseTo as string) {
 			case 'debugEvent-error':
 				this._dbgListener?.onDebugEror(msgJS.message);
@@ -399,7 +406,7 @@ export class UpasmClient {
 	startDebug()
 	{
 		let request = {method:'startDebug'};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			this.dbgRunning = true;
@@ -430,7 +437,7 @@ export class UpasmClient {
 	restartDebug()
 	{
 		let request = {method:'restartDebug'};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			this.dbgRunning = true;
@@ -462,7 +469,7 @@ export class UpasmClient {
 	stepDebug()
 	{
 		let request = {method:'stepDebug'};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {
@@ -485,7 +492,7 @@ export class UpasmClient {
 	stepbackDebug()
 	{
 		let request = {method:'stepbackDebug'};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {
@@ -508,7 +515,7 @@ export class UpasmClient {
 	continueDebug()
 	{
 		let request = {method:'continueDebug'};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {
@@ -527,7 +534,7 @@ export class UpasmClient {
 	pauseDebug()
 	{
 		let request = {method:'pauseDebug'};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {
@@ -550,7 +557,7 @@ export class UpasmClient {
 	stopDebug()
 	{
 		let request = {method:'stopDebug', needResponse:true};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			this.dbgRunning = false;
@@ -571,7 +578,7 @@ export class UpasmClient {
 	setBreakpoints(filename:string, lines:number[])
 	{
 		let request = {method:'setBreakpoints', filename:filename, lines:lines};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {
@@ -594,7 +601,7 @@ export class UpasmClient {
 	readRegisters()
 	{
 		let request = {method:'readRegisters'};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {
@@ -615,7 +622,7 @@ export class UpasmClient {
 	writeRegister(idx:number, bytes:number[])
 	{
 		let request = {method:'writeRegister', idx:idx, bytes:bytes};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {
@@ -634,7 +641,7 @@ export class UpasmClient {
 	readMemory(addr:number, length:number)
 	{
 		let request = {method:'readMemory', addr:addr, length:length};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {
@@ -657,7 +664,7 @@ export class UpasmClient {
 	writeMemory(addr:number, bytes:number[])
 	{
 		let request = {method:'writeMemory', addr:addr, bytes:bytes};
-		let result = JSON.parse(this.inst.processCommand(request)!);
+		let result = parseJson(this.inst.processCommand(request)!);
 		const ok = result.result as boolean;
 		if (ok) {
 			return {

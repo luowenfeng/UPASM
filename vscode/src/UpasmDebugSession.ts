@@ -731,7 +731,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 						}
 						else {
 							throw res.reason;
-						}					
+						}
 					}
 					else {
 						let bytes:number[] = [];
