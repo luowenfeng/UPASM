@@ -249,7 +249,7 @@ s7_23,		r95,
 0,			fmulc_conj, reg64,	reg64,			reg64,				b010110000,		c:2,	2,
 0,			divs32f,	reg32,	reg32|num,		reg32|num,	    	b011000000,		c:2,	0,
 0,			divs32,		reg32,	reg32|num,		reg32|num,			b011000010,		c:2,	0,
-0,			divs64_32,  reg64,	reg64|num,	    reg32,		    	b011000110,		c:2,	0,
+0,			divs64_32,  reg64,	reg64|num,	    reg32|num,		    b011000110,		c:2,	0,
 0,			divs64,     reg64,	reg64|num,	    reg64|num,       	b011000100,		c:2,	0,
 0,			fdiv,       reg32,	reg32,		    reg32,       	    b011001000,		c:2,	0,
 0,			cvt64_32,	reg32,	reg64,	     	,		       	    b101001100,		c:2,	0,
@@ -653,8 +653,8 @@ STACK_START_ADDR,		0x0900002c,
 RAM_SIZE,				0x00044000,
 IIC_ENDIAN,				little,
 
-//// 运行错误bit
-//#RUMTIME-ERROR-BITS
+// 运行错误bit
+#RUMTIME-ERROR-BITS
 // register,			bit,		error
 r91,					19,			sqrt less than 0
 r91,					18,			log2 less than 0

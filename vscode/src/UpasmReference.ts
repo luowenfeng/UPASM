@@ -357,7 +357,7 @@ export class UpasmReferenceManager
 			let src = this.watcher.regs[m.idx];
 			for (let j=0; j<m.bit_len/8; j++) {
 				this._regs[i].bytes[j] = src.bytes[m.bit_start/8+j];
-			}			
+			}
 		}
 	}
 
@@ -385,8 +385,8 @@ export class UpasmReferenceManager
 
 			case "func_var": break;
 			}
-		}	
-				
+		}
+		
 		return undefined;
 	}
 

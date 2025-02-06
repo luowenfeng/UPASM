@@ -182,7 +182,7 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 			this.dbgEvent.sendEvent('stopOnStep');	
 		} catch (error) {
 			this.dbgEvent.sendEvent('error', error);
-		}		
+		}
 	}
 	//#endregion
 
