@@ -42,6 +42,7 @@ https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=ms
 ```json
 "editor.semanticTokenColorCustomizations": {
 	"rules": {
+		"notInContext:upasm": { "foreground": "#888888", "italic": true },
 		"comment:upasm": { "foreground": "#80A080", "italic": true },
 		"directive:upasm": { "foreground": "#C53EE0", "italic": false },
 		"type:upasm": { "foreground": "#33BFE2", "italic": false },

@@ -3,6 +3,7 @@ import { UpasmExt } from './UpasmExt';
 import { UpasmClient } from './UpasmClient';
 
 export const tokenTypeText = [
+	'notInContext',
 	'comment',
 	'directive',
 	'type',
