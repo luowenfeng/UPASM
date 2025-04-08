@@ -222,7 +222,8 @@ class UpasmInstWrap {
 	processCommand(obj:any)
 	{
 		let text = JSON.stringify(obj);
-		return this.inst.processCommand(this.ptr, text);
+		let o = this.inst.processCommand(this.ptr, text);
+		return o;
 	}
 
 	getMessages() {

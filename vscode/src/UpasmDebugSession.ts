@@ -20,7 +20,7 @@ const REG128_REF_ID = 3;
 export const REG256_REF_ID = 4;
 
 interface IRWCommand {
-	type: 'read'|'write'|'invalid';
+	type: 'read'|'write'|'dumpbin'|'invalid';
 	step: 4|2|1;
 	addr: number;
 	lengthOrValue: number;
@@ -163,6 +163,12 @@ function decodeRWCommand(expression:string, filename:string, currLine:number, re
 				}
 			}
 		}
+	}
+	else if (parts.length == 4 && parts[0] == 'dumpbin') {
+		cmd.addr = Number.parseInt(parts[1]);
+		cmd.lengthOrValue = Number.parseInt(parts[2]);
+		cmd.toFile = parts[3];
+		cmd.type = 'dumpbin';
 	}
 	return cmd;
 }
@@ -652,7 +658,24 @@ export class UpasmDebugSession extends LoggingDebugSession {
 			}
 
 			const cmd = decodeRWCommand(expression, this.currFilename, this.currLine, this.refMgr);
-			if (cmd.type != 'invalid') {
+			if (cmd.type == 'dumpbin') {
+				let res = this.client.readMemory(cmd.addr, cmd.lengthOrValue);
+				if (res.ok) {
+					let data = new Uint8Array(res.bytes.length);
+					for (let i=0; i<res.bytes.length; i++) {
+						data[i] = res.bytes[i];
+					}
+					if (!path.isAbsolute(cmd.toFile) && path.isAbsolute(this._rootPath)) {
+						cmd.toFile = path.join(this._rootPath, cmd.toFile);
+					}
+
+					fs.writeFileSync(cmd.toFile, data, {encoding:null});
+				}
+				else {
+					throw res.reason;
+				}
+			}
+			else if (cmd.type != 'invalid') {
 				try {
 					if (cmd.type == 'read') {
 						let rowbytes = vscode.workspace.getConfiguration().get<number>('upasm.debugger.rowbytes');
@@ -711,7 +734,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 									}
 								}
 								break;
-							}							
+							}
 							if (cmd.toFile.length > 0) {
 								if (!path.isAbsolute(cmd.toFile) && path.isAbsolute(this._rootPath)) {
 									cmd.toFile = path.join(this._rootPath, cmd.toFile);
