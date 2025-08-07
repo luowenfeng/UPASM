@@ -61,6 +61,22 @@ https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=ms
 },
 ```
 
+- notInContext表示不在上下文的文本, 比如`#if 0`包围的文本.
+- comment表示代码中的注释
+- directive表示以`#`开头的预编译引导词, 如`#define`,`#if`,`#else`; 和以`@`开头的特殊引导词, 如`@import`, `@export`
+- type表示以`.`开头的数据类型引导词, 如`.word`,`.short`,`.reserve`...
+- string表示用引号包围的字符串, 如`#include`后面的头文件路径
+- number表示立即数
+- macro表示宏定义
+- label表示以`:`结束的标签
+- variable表示变量, 可以是对标签的引用或者函数中定义的寄存器变量
+- instruction表示指令
+- keyword表示关键字
+- cmp_operator表示在if/while块中用到的比较符
+- bracket表示代码中的各种括号
+- invalid表示出错的代码
+
+
 ### 工程文件
 从v0.10.0版本开始, 所有的可配置项都移入工程文件, vscode的插件设置只保留了一项: **工程文件**.   
 如果工程文件的配置项为空字, 则使用在插件安装目录的`congfig`文件夹下的`default.upproj`, 该文件内容如下:
