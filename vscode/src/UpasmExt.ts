@@ -246,7 +246,7 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 		const vsbuilder = new vscode.SemanticTokensBuilder();
 		if (document.fileName.match(/.upinc$|.upasm$|.upconf$/)) {
 			const res = this.client.getFile(document.fileName);
-			if (res.fileInfo) {					
+			if (res.fileInfo) {
 				this.buildInfo?.files.set(document.fileName, res.fileInfo);
 				this.buildInfo?.lowerFiles.set(document.fileName.toLowerCase(), res.fileInfo);
 				for (const c of res.fileInfo.lines.values()) {
@@ -398,7 +398,13 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 				let ff = this.buildInfo?.files.get(editor.document.fileName);
 				if (ff) {
 					this.triggerUpdateDecorations();
-				}				
+				}
+				else {
+					let res = this.client.getFile(editor.document.fileName);
+					if (res.fileInfo) {
+						this.triggerUpdateDecorations();
+					}
+				}
 			}
 		}, null, context.subscriptions);
 
@@ -445,7 +451,9 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 						this.outputChannel.appendLine(res.reason);
 					}
 					else {
-						this.buildInfo!.files.set(res.fileInfo!.filename, res.fileInfo!);
+						if (this.buildInfo!.files.has(event.document.fileName)) {
+							this.buildInfo!.files.set(event.document.fileName, res.fileInfo!);
+						}						
 					}
 				}
 				else {
@@ -455,18 +463,18 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 		}, null, context.subscriptions);
 
 		vscode.workspace.onDidCreateFiles(event => {
-			const res = this.client.rebuild();
-			this.checkBuildResult(res);
+			//const res = this.client.rebuild();
+			//this.checkBuildResult(res);
 		});
 	
 		vscode.workspace.onDidDeleteFiles(event => {
-			const res = this.client.rebuild();
-			this.checkBuildResult(res);
+			//const res = this.client.rebuild();
+			//this.checkBuildResult(res);
 		});
 
 		vscode.workspace.onDidRenameFiles(event => {
-			const res = this.client.rebuild();
-			this.checkBuildResult(res);
+			//const res = this.client.rebuild();
+			//this.checkBuildResult(res);
 		});
 		this.triggerUpdateDecorations();
 	}
