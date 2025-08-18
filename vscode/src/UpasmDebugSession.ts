@@ -93,6 +93,16 @@ function decodeRWCommand(expression:string, filename:string, currLine:number, re
 		cmd.append = true;
 		parts = [parts[0], parts[1], parts[2]];
 	}
+	else if (parts.length == 2) {
+		let p2 = parts[1].split('~');
+		if (p2.length == 2) {
+			let start = Number.parseInt(p2[0]);
+			let end = Number.parseInt(p2[1]);
+			if (!isNaN(start) && !isNaN(end) && end > start) {
+				parts = [parts[0], p2[0], (end - start).toString()];
+			}
+		}
+	}
 
 	
 	if (parts.length == 3) {
