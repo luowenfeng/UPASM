@@ -103,7 +103,9 @@ export interface IBuildInfo {
 	symbols:Map<string, number>;
 	cfg:IConfigInfo;
 	errors:string[];
-
+	programSize:number;
+	dataSize:number;
+	reserveSize:number;
 };
 
 export function getNameRef(buildInfo:IBuildInfo, filename:string, line:number, name:string) :INameRef|undefined
@@ -160,7 +162,10 @@ function decodeBuildInfo(json:any)
 		lowerFiles:new Map<string, IAsmInfo>(), 
 		symbols:new Map<string, number>(),
 		errors:[], 
-		cfg:decodeConfigInfo(json.configInfo)
+		cfg:decodeConfigInfo(json.configInfo),
+		programSize:0,
+		dataSize:0,
+		reserveSize:0
 	};
 	for (const file of json.fileInfo) {
 		let asmInfo = decodeAsmInfo(file);
@@ -172,6 +177,11 @@ function decodeBuildInfo(json:any)
 		for(const pair of json.globalSymbols) {
 			buildInfo.symbols.set(pair.name, pair.addr);
 		}
+	}
+	if (json.buildSize != undefined) {
+		buildInfo.programSize = json.buildSize.programSize as number;
+		buildInfo.dataSize = json.buildSize.dataSize as number;
+		buildInfo.reserveSize = json.buildSize.reserveSize as number;
 	}
 	return buildInfo;
 }

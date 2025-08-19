@@ -354,7 +354,6 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 				this.outputChannel.appendLine(error);
 			}
 			this.outputChannel.show();
-			//return false;
 		}
 		return true;
 	}
@@ -639,8 +638,13 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 					projfile = "default.upproj";
 				}
 				if (outRes.ok) {
-					this.outputChannel.appendLine('Build "' + projfile + '" succeed at ' + (new Date()).toString());
-					this.outputChannel.appendLine('Output files:\n');
+					this.outputChannel.appendLine('Build "' + projfile + '" succeed at ' + (new Date()).toLocaleString());
+					this.outputChannel.appendLine('\tProgram size:' + res.buildInfo!.programSize + ' bytes');
+					this.outputChannel.appendLine('\tData size:' + res.buildInfo!.dataSize + ' bytes');
+					this.outputChannel.appendLine('\tReserve size:' + res.buildInfo!.reserveSize + ' bytes');
+					this.outputChannel.appendLine('\tBinary file size(Program + Data):' + (res.buildInfo!.programSize + res.buildInfo!.dataSize) + ' bytes');
+					this.outputChannel.appendLine('\tTotal size(Program + Data + Reserve):' + (res.buildInfo!.programSize + res.buildInfo!.dataSize + res.buildInfo!.reserveSize) + ' bytes');
+					this.outputChannel.appendLine('Output files:');
 					for (const name of outRes.files) {
 						this.outputChannel.appendLine('\t'+name);
 					}
