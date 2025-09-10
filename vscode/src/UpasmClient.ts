@@ -106,6 +106,9 @@ export interface IBuildInfo {
 	programSize:number;
 	dataSize:number;
 	reserveSize:number;
+	stackSize:number;
+	remainSize:number;
+	ramSize:number;
 };
 
 export function getNameRef(buildInfo:IBuildInfo, filename:string, line:number, name:string) :INameRef|undefined
@@ -165,7 +168,10 @@ function decodeBuildInfo(json:any)
 		cfg:decodeConfigInfo(json.configInfo),
 		programSize:0,
 		dataSize:0,
-		reserveSize:0
+		reserveSize:0,
+		stackSize:0,
+		remainSize:0,
+		ramSize:0,
 	};
 	for (const file of json.fileInfo) {
 		let asmInfo = decodeAsmInfo(file);
@@ -182,6 +188,9 @@ function decodeBuildInfo(json:any)
 		buildInfo.programSize = json.buildSize.programSize as number;
 		buildInfo.dataSize = json.buildSize.dataSize as number;
 		buildInfo.reserveSize = json.buildSize.reserveSize as number;
+		buildInfo.stackSize = json.buildSize.stackSize as number;
+		buildInfo.remainSize = json.buildSize.remainSize as number;
+		buildInfo.ramSize = json.buildSize.ramSize as number;
 	}
 	return buildInfo;
 }

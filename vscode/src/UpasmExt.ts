@@ -644,6 +644,10 @@ export class UpasmExt implements vscode.DocumentSemanticTokensProvider,
 					this.outputChannel.appendLine('\tReserve size:' + res.buildInfo!.reserveSize + ' bytes');
 					this.outputChannel.appendLine('\tBinary file size(Program + Data):' + (res.buildInfo!.programSize + res.buildInfo!.dataSize) + ' bytes');
 					this.outputChannel.appendLine('\tTotal size(Program + Data + Reserve):' + (res.buildInfo!.programSize + res.buildInfo!.dataSize + res.buildInfo!.reserveSize) + ' bytes');
+					this.outputChannel.appendLine('\tRAM size:' + res.buildInfo!.ramSize + ' bytes');
+					this.outputChannel.appendLine('\tStack size:' + res.buildInfo!.stackSize + ' bytes');
+					this.outputChannel.appendLine('\tRemain size:' + res.buildInfo!.remainSize + ' bytes');
+
 					this.outputChannel.appendLine('Output files:');
 					for (const name of outRes.files) {
 						this.outputChannel.appendLine('\t'+name);
