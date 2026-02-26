@@ -127,6 +127,8 @@ FPU=fpu.upconf
 - #DEBUG-INFO: 调试相关参数 (目前模拟器无法使用, 这部分选项不起作用, 只能用IIC调试)
   - DEBUG_TYPE: 调试类型, 仅支持 **IIC**(IIC调试) 
   - SIMULATE_DATA: 暂时无用
+  - I2C_ADDR_BYTE: IIC地址(默认为0x50), 需要写成16进制
+  - I2C_SPEED: IIC速度, 0~3, 0最慢, 3最快, 默认为3
 - #OUTPUT-INFO: 输出相关参数
   - PATH: 输出路径. 默认为`out`.
   - BIN: 可填`true`或`false`是否生成`bin`文件. 默认为`true`.
@@ -402,6 +404,11 @@ UPASM语法继承自LXP32(https://lxp32.github.io/).
 	<tr>
 		<th>.code</th>
 		<th>在代码区中定义32bit数据</th>
+		<th>新增</th>
+	</tr>
+	<tr>
+		<th>.text</th>
+		<th>定义字符串, 需要用引号包围!</th>
 		<th>新增</th>
 	</tr>
 	<tr>
@@ -750,6 +757,7 @@ sw rv rj
 .byte 0x00 0x00 0x00 0x00 // 长度为4字节, 合法
 .short 0x0000 0x0000 0x0000 0x0000 // 长度为8字节, 合法
 ```
+对于`.text`,编译器会自动填0保证4字节对齐.
 
 #### 标签(符号)和`.align`
 LXP32中, .align为编译期对齐, UPASM中改为链接期对齐.  
