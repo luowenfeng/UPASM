@@ -718,6 +718,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 									appendText += text;
 									if ((i + 1) % (rowbytes/cmd.step) == 0) {
 										result += '\n';
+										appendText += '\n';
 									}
 								}
 								break;
@@ -730,6 +731,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 									appendText += text;
 									if ((i + 1) % (rowbytes/cmd.step) == 0) {
 										result += '\n';
+										appendText += '\n';
 									}
 								}
 								break;
@@ -741,6 +743,7 @@ export class UpasmDebugSession extends LoggingDebugSession {
 									appendText += text;
 									if ((i + 1) % (rowbytes/4) == 0) {
 										result += '\n';
+										appendText += '\n';
 									}
 								}
 								break;

@@ -114,6 +114,13 @@ export interface IBuildInfo {
 export function getNameRef(buildInfo:IBuildInfo, filename:string, line:number, name:string) :INameRef|undefined
 {
 	try {
+		// 先在全局符号中查找
+		if (buildInfo.symbols.has(name)) {
+			let sym = buildInfo.symbols.get(name)!
+			let nameRef:INameRef = {content:"0x" + sym.toString(16), type:"symbol", start:0, end:-1, refFile:"Global symbol", refLine:-1};
+			return nameRef
+		}
+
 		let file = buildInfo.files.get(filename);
 		if (file != undefined) {
 			let nameRefs = file.nameMap.get(name);
