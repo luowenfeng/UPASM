@@ -131,6 +131,12 @@ function decodeRWCommand(expression:string, filename:string, currLine:number, re
 		}
 
 		cmd.lengthOrValue = Number.parseInt(parts[2]);
+		if (isNaN(cmd.lengthOrValue)) {
+			let num = refMgr.getNamedValue(filename, currLine, parts[2]);
+			if (num != undefined && !isNaN(num)) {
+				cmd.lengthOrValue = num;
+			}
+		}
 		if (!isNaN(cmd.addr) && cmd.addr >= 0 && cmd.addr <= 0xffffffff && !isNaN(cmd.lengthOrValue)) {
 			if (parts[0].length >= 2) {
 				let maxv = 0xff;

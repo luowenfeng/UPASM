@@ -137,7 +137,14 @@ export function getNameRef(buildInfo:IBuildInfo, filename:string, line:number, n
 								}
 							}
 
-							return getNameRef(buildInfo, filename, line, nameRef.content);
+							let num = Number.parseInt(nameRef.content)
+							if (!isNaN(num)) {
+								nameRef.type = "symbol";
+								return nameRef;
+							}
+							else {
+								return getNameRef(buildInfo, filename, line, nameRef.content);
+							}
 						}
 						return nameRef;
 					}
