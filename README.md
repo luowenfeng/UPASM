@@ -457,6 +457,11 @@ UPASM语法继承自LXP32(https://lxp32.github.io/).
 		<th>无变化</th>
 	</tr>
 	<tr>
+		<th>repeat</th>
+		<th>开启循环</th>
+		<th>新增</th>
+	</tr>
+	<tr>
 		<th colspan="3">注释</th>
 	</tr>
 	<tr>
@@ -805,6 +810,18 @@ code:	// code符号被分到代码段
 ```
 循环中可用`continue`跳转到循环头部, `break`跳到循环结束处.  
 `continue` `break` 后可以接一个数字表示跳出第几层循环.
+
+#### `repeat`循环语句
+`repeat`关键字后接的操作数可以是`寄存器`或者`立即数`, 不能是`表达式`. 该操作数表示循环次数.  
+后面的花括号内的代码就是循环内容.  
+`repeat`循环不能嵌套使用.  
+`repeat`循环不能用`continue` `break`跳出.  
+`repeat`循环中, 第一个指令不能是`hlt`.
+```
+repeat [操作数] {
+	// ...
+}
+```
 
 #### `@jump_regs`用于定义跳转寄存器
 - `@jump_regs`不可用于头文件
